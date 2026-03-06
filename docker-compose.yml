@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  fact-bus:
+    build: .
+    image: claw-fact-bus:latest
+    container_name: fact-bus
+    ports:
+      - "28080:8080"
+    environment:
+      - FACT_BUS_DATA_DIR=/data
+      - FACT_BUS_HOST=0.0.0.0
+      - FACT_BUS_PORT=8080
+    volumes:
+      - fact-bus-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  fact-bus-data:
