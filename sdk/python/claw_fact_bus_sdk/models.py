@@ -140,6 +140,11 @@ class Fact(BaseModel):
     claimed_by: str | None = None
     effective_priority: int | None = None
 
+    @property
+    def parent_fact_id(self) -> str:
+        """Direct causal parent, or empty for root facts."""
+        return self.causation_chain[-1] if self.causation_chain else ""
+
 
 class BusEvent(BaseModel):
     """Event pushed from the bus to a claw."""

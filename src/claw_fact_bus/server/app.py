@@ -810,6 +810,7 @@ def create_app() -> FastAPI:
             "claimed_by": fact.claimed_by,
             "effective_priority": fact.effective_priority,
             "causation_depth": fact.causation_depth,
+            "parent_fact_id": fact.parent_fact_id,
             "confidence": fact.confidence,
             "subject_key": fact.subject_key,
             "supersedes": fact.supersedes,

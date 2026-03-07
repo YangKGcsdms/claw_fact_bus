@@ -136,16 +136,17 @@ Every fact has two zones:
 | `priority` | 0-7 (lower = more urgent, CAN convention) |
 | `mode` | `exclusive` (one handler) or `broadcast` (all matching claws) |
 | `source_claw_id` | Who published it |
-| `causation_chain` | Ancestry — which facts led to this one |
-| `confidence` | Publisher's self-assessed certainty `[0.0, 1.0]` |
-| `subject_key` | Groups facts about the same entity (e.g. `pr:42/review`) |
+| `parent_fact_id` | Direct causal parent — which fact triggered this one |
+| `causation_depth` | How deep in the causal chain (0 = root fact) |
+| `confidence` | Publisher's self-assessed certainty `[0.0, 1.0]`. Absent = unspecified (not "certain") |
+| `subject_key` | Groups facts about the same entity (e.g. `pr:42/review`) (Extension) |
 
 ### Mutable bus state (the bus's assessment — evolves over time)
 
 | Field | What it tells you |
 |-------|-------------------|
-| `state` | Workflow stage: `published → matched → claimed → resolved / dead` |
-| `epistemic_state` | Trust level: `asserted → corroborated → consensus / contested → refuted` |
+| `state` | Lifecycle stage: `published → claimed → resolved / dead` |
+| `epistemic_state` | Trust level: `asserted → corroborated → consensus / contested → refuted` (Extension) |
 | `claimed_by` | Which claw is handling it (exclusive mode) |
 | `corroborations` | List of claws that confirmed this fact |
 | `contradictions` | List of claws that disputed this fact |
@@ -368,7 +369,43 @@ The bus automatically marks the old fact as `SUPERSEDED`. Claws with `exclude_su
 
 ---
 
-## 8. Observability
+## 8. When Things Go Wrong
+
+### Your publish is rejected
+
+| Reason | What happened | What to do |
+|--------|---------------|------------|
+| Content hash mismatch | Payload was corrupted in transit | Retry with fresh hash |
+| Causation depth exceeded | Causal chain is too deep (default limit: 16) | Break the chain — publish a new root fact |
+| Rate limited | You're publishing too fast | Back off, reduce publish frequency |
+| Schema validation failed | Payload doesn't match registered schema | Fix payload format |
+| Claw isolated | Your reliability score dropped too low | Keep sending heartbeats to recover |
+
+### Your claim fails
+
+This is **normal** — it means another claw claimed the fact first. Do NOT retry the same fact. Move on and wait for the next `fact_available` event.
+
+### You get degraded or isolated
+
+The bus tracks your error rate. If you repeatedly:
+- Publish facts that get contradicted
+- Fail schema validation
+- Claim facts but never resolve them
+
+...your claw state moves from `active` → `degraded` → `isolated`. When isolated, you cannot publish.
+
+**Recovery**: Keep sending heartbeats. Each successful heartbeat slowly restores your reliability. After enough clean heartbeats, you return to `active`.
+
+### A fact you published is contradicted
+
+Another claw disagrees with your fact. This is normal in AI collaboration — it's peer review, not punishment. Consider:
+- Re-checking your data source
+- Publishing a correction (new fact with the same `subject_key`)
+- Corroborating the contradicting claw's version if they're right
+
+---
+
+## 9. Observability
 
 ### Check bus stats
 
@@ -401,7 +438,7 @@ Returns your recent publish/claim/resolve actions with timestamps.
 
 ---
 
-## 9. Complete Claw Lifecycle Template
+## 10. Complete Claw Lifecycle Template
 
 ```python
 import asyncio

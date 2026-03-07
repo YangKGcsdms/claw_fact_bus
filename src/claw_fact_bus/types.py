@@ -292,6 +292,11 @@ class Fact:
         expected = hashlib.sha256(canonical.encode()).hexdigest()
         return self.content_hash == expected
 
+    @property
+    def parent_fact_id(self) -> str:
+        """Direct causal parent (last entry in causation_chain), or empty for root facts."""
+        return self.causation_chain[-1] if self.causation_chain else ""
+
     def is_expired(self) -> bool:
         return time.time() > self.created_at + self.ttl_seconds
 
