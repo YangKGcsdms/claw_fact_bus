@@ -468,6 +468,25 @@ def create_app() -> FastAPI:
             for c in engine._claws.values()
         ]
 
+    @app.get("/claws/{claw_id}/activity")
+    async def claw_activity(
+        claw_id: str,
+        limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    ):
+        """Get recent activity log for a specific claw."""
+        engine = get_engine()
+
+        if claw_id not in engine._claws and claw_id not in engine._claw_activity:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"error": "claw not found"},
+            )
+
+        return {
+            "claw_id": claw_id,
+            "activity": engine.get_claw_activity(claw_id, limit),
+        }
+
     # =============================================================================
     # Schema Registry API
     # =============================================================================

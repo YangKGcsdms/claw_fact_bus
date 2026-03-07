@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import random
 import time
 from contextlib import asynccontextmanager
 from typing import Any, Callable, Coroutine
@@ -37,6 +38,10 @@ class FactBusClient:
                     await client.resolve(event.fact.fact_id)
     """
 
+    RECONNECT_BASE_DELAY = 1.0
+    RECONNECT_MAX_DELAY = 60.0
+    RECONNECT_JITTER = 0.5
+
     def __init__(
         self,
         base_url: str,
@@ -54,6 +59,7 @@ class FactBusClient:
         self._ws_task: asyncio.Task | None = None
         self._heartbeat_task: asyncio.Task | None = None
         self._filter: AcceptanceFilter | None = None
+        self._ws_connected = False
 
     async def __aenter__(self) -> FactBusClient:
         """Async context manager entry."""
@@ -307,16 +313,19 @@ class FactBusClient:
     # -------------------------------------------------------------------------
 
     async def _websocket_loop(self) -> None:
-        """WebSocket connection loop for real-time events."""
+        """WebSocket connection loop with exponential backoff reconnection."""
         import websockets
 
         ws_url = self.base_url.replace("http://", "ws://").replace("https://", "wss://")
         uri = f"{ws_url}/ws/{self.claw_id}"
+        attempt = 0
 
         while self._connected:
             try:
                 async with websockets.connect(uri) as ws:
-                    # Send subscription
+                    attempt = 0
+                    self._ws_connected = True
+
                     await ws.send(
                         json.dumps({
                             "action": "subscribe",
@@ -325,7 +334,6 @@ class FactBusClient:
                         })
                     )
 
-                    # Listen for events
                     while self._connected:
                         try:
                             message = await asyncio.wait_for(
@@ -344,13 +352,9 @@ class FactBusClient:
                             if data.get("type") == "pong":
                                 continue
 
-                            # Parse event
                             event = BusEvent(**data)
-
-                            # Add to queue
                             await self._event_queue.put(event)
 
-                            # Notify handlers
                             for handler in self._event_handlers:
                                 try:
                                     await handler(event)
@@ -358,14 +362,22 @@ class FactBusClient:
                                     print(f"[SDK] Event handler error: {e}")
 
                         except asyncio.TimeoutError:
-                            # Send heartbeat
                             await ws.send(json.dumps({"action": "heartbeat"}))
                         except websockets.exceptions.ConnectionClosed:
                             break
 
             except Exception as e:
-                print(f"[SDK] WebSocket error: {e}")
-                await asyncio.sleep(5.0)  # Reconnect delay
+                self._ws_connected = False
+                if not self._connected:
+                    break
+                delay = min(
+                    self.RECONNECT_BASE_DELAY * (2 ** attempt),
+                    self.RECONNECT_MAX_DELAY,
+                )
+                delay += random.uniform(0, self.RECONNECT_JITTER)
+                attempt += 1
+                print(f"[SDK] WebSocket reconnecting in {delay:.1f}s (attempt {attempt}): {e}")
+                await asyncio.sleep(delay)
 
     async def _heartbeat_loop(self) -> None:
         """Periodic heartbeat to maintain connection and TEC recovery."""

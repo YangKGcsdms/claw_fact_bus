@@ -61,6 +61,13 @@ class AcceptanceFilter(BaseModel):
 
     At least one of capability_offer, domain_interests, or fact_type_patterns
     must match for a fact to be delivered.
+
+    For common use cases, use the factory classmethods instead of
+    constructing manually::
+
+        AcceptanceFilter.worker(["code_review", "python"])
+        AcceptanceFilter.monitor(["backend"])
+        AcceptanceFilter.coordinator(["deploy.*", "ci.*"])
     """
 
     capability_offer: list[str] = Field(
@@ -83,6 +90,33 @@ class AcceptanceFilter(BaseModel):
         default_factory=lambda: ["exclusive", "broadcast"],
         description="Which fact modes to accept",
     )
+
+    @classmethod
+    def worker(cls, capabilities: list[str], **overrides: Any) -> AcceptanceFilter:
+        """Claw that claims and processes exclusive facts matching its capabilities."""
+        return cls(
+            capability_offer=capabilities,
+            modes=["exclusive"],
+            **overrides,
+        )
+
+    @classmethod
+    def monitor(cls, domains: list[str], **overrides: Any) -> AcceptanceFilter:
+        """Read-only claw that observes broadcast facts in given domains."""
+        return cls(
+            domain_interests=domains,
+            modes=["broadcast"],
+            **overrides,
+        )
+
+    @classmethod
+    def coordinator(cls, patterns: list[str], **overrides: Any) -> AcceptanceFilter:
+        """Claw that receives all delivery modes, filtered by fact_type patterns."""
+        return cls(
+            fact_type_patterns=patterns,
+            modes=["exclusive", "broadcast"],
+            **overrides,
+        )
 
 
 class Fact(BaseModel):

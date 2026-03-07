@@ -19,7 +19,7 @@ import logging
 import os
 import secrets
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -93,6 +93,11 @@ class BusEngine:
         # Event dispatch
         self._event_callbacks: list[EventCallback] = []
         self._background_tasks: set[asyncio.Task] = set()
+
+        # Per-claw activity log (bounded ring buffer per claw)
+        self._claw_activity: dict[str, deque[dict]] = defaultdict(
+            lambda: deque(maxlen=200)
+        )
 
         # Schema
         self._schema_registry = SchemaRegistry(data_path / "schemas")
@@ -248,6 +253,7 @@ class BusEngine:
             self._claws[claw_id] = identity
             self._claw_connections[claw_id] = event_callback
             self._reliability.record_event(identity, ErrorEvent.HEARTBEAT_OK)
+        self._record_activity(claw_id, "connect")
         await self._replay_recent_facts(claw_id)
         return identity
 
@@ -258,6 +264,7 @@ class BusEngine:
                 del self._claws[claw_id]
             self._claw_connections.pop(claw_id, None)
             self._claw_tokens.pop(claw_id, None)
+        self._record_activity(claw_id, "disconnect")
 
     async def heartbeat(self, claw_id: str) -> ClawState:
         async with self._claw_lock:
@@ -337,6 +344,7 @@ class BusEngine:
             self._store.append(fact, "publish")
 
         # Step 9: Dispatch (outside lock)
+        self._record_activity(fact.source_claw_id, "publish", fact.fact_id, fact.fact_type)
         await self._dispatch_fact(fact)
         return True, "ok", fact.fact_id
 
@@ -394,6 +402,7 @@ class BusEngine:
             self._active_claims[claw_id] = self._active_claims.get(claw_id, 0) + 1
             self._store.append(fact, "claim", {"claimer": claw_id})
 
+        self._record_activity(claw_id, "claim", fact_id, fact.fact_type)
         await self._notify_claimed(fact, claw_id)
         return True, "ok"
 
@@ -421,6 +430,8 @@ class BusEngine:
 
             if claw_id in self._claws:
                 self._reliability.record_event(self._claws[claw_id], ErrorEvent.FACT_RESOLVED)
+
+        self._record_activity(claw_id, "resolve", fact_id, fact.fact_type)
 
         if result_facts:
             for child in result_facts:
@@ -522,6 +533,7 @@ class BusEngine:
             WorkflowStateMachine.transition(fact, FactState.PUBLISHED)
             fact.claimed_by = None
 
+        self._record_activity(claw_id, "release", fact_id, fact.fact_type)
         await self._dispatch_fact(fact)
         return True, "ok"
 
@@ -580,6 +592,18 @@ class BusEngine:
         for c in self._claws.values():
             counts[c.state.value] += 1
         return dict(counts)
+
+    def _record_activity(self, claw_id: str, action: str, fact_id: str = "", detail: str = "") -> None:
+        self._claw_activity[claw_id].append({
+            "action": action,
+            "fact_id": fact_id,
+            "detail": detail,
+            "timestamp": time.time(),
+        })
+
+    def get_claw_activity(self, claw_id: str, limit: int = 50) -> list[dict]:
+        entries = list(self._claw_activity.get(claw_id, []))
+        return entries[-limit:][::-1]
 
     # -------------------------------------------------------------------------
     # Internal: Dispatch and Notifications
