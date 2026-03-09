@@ -95,34 +95,38 @@ Fact Bus 的构思是将协作降维到最纯粹的形式：**信息的广播与
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │              不可变记录区（气味本身）                           │
-│        发布后冻结 · 由 content_hash + signature 覆盖         │
+│           发布后冻结 · 由 content_hash 覆盖                   │
 ├─────────────────────────────────────────────────────────────┤
 │  fact_id          唯一标识                                    │
-│  fact_type        分类命名 (code.review.needed)              │
-│  semantic_kind    语义类型 (observation/request/...)          │
+│  fact_type        点分类命名 (code.review.needed)            │
 │  payload          业务数据 {}                                 │
-│  domain_tags      领域标签                                    │
-│  need_capabilities 能力需求                                   │
-│  priority         优先级 (0-7, CAN 风格, 越小越高)           │
-│  mode             broadcast / exclusive                      │
 │  source_claw_id   发布者                                     │
-│  causation_chain  因果链（祖先 fact_ids）                     │
-│  subject_key      主题键（同一对象的连续观察）                  │
-│  supersedes       显式替代的 fact_id                          │
+│  created_at       Unix 时间戳                                │
+│  mode             broadcast / exclusive                      │
+│  priority         优先级 (0-7, CAN 风格, 越小越高)           │
+│  ttl_seconds      存活时间                                    │
+│  parent_fact_id   直接因果父节点（可选）                       │
+│  causation_depth  因果链深度 (0 = 根事实)                    │
 │  confidence       发布者自评可信度 [0.0, 1.0]                 │
 │  content_hash     SHA-256(payload)                           │
-│  signature        总线 HMAC 签名                              │
+│  domain_tags      领域标签（可选）                             │
+│  need_capabilities 能力需求（可选）                            │
+│ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ 扩展字段 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ │
+│  semantic_kind    语义类型 (observation/request/...)          │
+│  subject_key      主题键（同一对象的连续观察）                  │
+│  supersedes       显式替代的 fact_id                          │
 ├─────────────────────────────────────────────────────────────┤
 │              可变总线状态区（总线的评估）                       │
 │              由引擎独占管理                                    │
 ├─────────────────────────────────────────────────────────────┤
 │  state            工作流状态 (published/claimed/resolved)     │
-│  epistemic_state  真值状态 (asserted/corroborated/...)       │
-│  claimed_by       认领者 claw_id                              │
-│  sequence_number  全局单调序列号                               │
-│  superseded_by    被哪个新 fact 替代                          │
+│  claimed_by       认领者 claw_id (exclusive 模式)            │
+│  resolved_at      完成时间戳                                  │
 │  corroborations   佐证者列表                                  │
 │  contradictions   反驳者列表                                  │
+│ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ 扩展字段 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ │
+│  epistemic_state  真值状态 (asserted/corroborated/...)       │
+│  superseded_by    被哪个新 fact 替代                          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -133,12 +137,12 @@ Fact Bus 的构思是将协作降维到最纯粹的形式：**信息的广播与
 每个 fact 上运行两个正交的生命周期：
 
 ```
-WorkflowState（任务流转）:
-  CREATED → PUBLISHED → MATCHED → CLAIMED → RESOLVED
-                          │          │
-                          └──→ DEAD ←┘
+WorkflowState（任务流转 — 核心协议 §5.1）:
+  PUBLISHED ──→ CLAIMED ──→ RESOLVED
+       │            │
+       └───→ DEAD ←─┘
 
-EpistemicState（真值生命周期）:
+EpistemicState（真值生命周期 — 扩展 1）:
   ASSERTED → CORROBORATED → CONSENSUS
       │            │
       └→ CONTESTED → REFUTED

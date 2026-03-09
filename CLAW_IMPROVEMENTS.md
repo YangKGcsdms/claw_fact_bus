@@ -40,39 +40,13 @@
 
 ## 2. 🎯 事实 (Fact) 改进
 
-### 2.1 问题：事实类型缺乏语义
+### 2.1 ~~问题：事实类型缺乏语义~~ ✅ 已由协议覆盖
 
-**现状**：
-```json
-{
-  "fact_type": "code.review.needed"
-}
-```
-- 类型是字符串，缺乏结构
-- Claw 难以推断如何处理
+> **已实现**：Extension 4 (Schema Governance) 提供了完整的 Schema Registry，支持 OPEN/WARN/STRICT 三种模式。Extension 2 (Semantic Classification) 提供了 `semantic_kind` 语义分类。核心协议的 `need_capabilities` 字段已覆盖"处理方法元数据"的需求。
 
-**期望改进**：
-- [ ] 引入 **Fact Schema Registry**（事实模式注册）
-- [ ] 事实应该有"处理方法"元数据：
-```json
-{
-  "fact_type": "code.review.needed",
-  "schema": "CodeReviewNeeded",
-  "expected_capabilities": ["code_review", "linter"],
-  "default_ttl": 300
-}
-```
+### 2.2 ~~问题：Payload 缺乏验证~~ ✅ 已由协议覆盖
 
-### 2.2 问题：Payload 缺乏验证
-
-**现状**：
-- 发布事实时没有 schema 验证
-- 格式错误的事实可能导致 Claw 崩溃
-
-**期望改进**：
-- [ ] 事实类型注册时必须定义 JSON Schema
-- [ ] Bus 服务端验证 payload 格式
-- [ ] 拒绝不符合 schema 的事实
+> **已实现**：Extension 4 (Schema Governance) 在 STRICT 模式下拒绝不符合 schema 的事实。Extension 7 (Storm Protection) 将 schema validation 纳入 admission check 序列。
 
 ### 2.3 问题：上下文丢失
 
@@ -237,22 +211,9 @@ GET /api/v1/claws/{claw_id}/activity
 
 ## 8. 📡 协议扩展
 
-### 8.1 问题：单向通信
+### 8.1 ~~问题：单向通信~~ ⚠️ 与协议哲学冲突
 
-**现状**：
-- 只有 Publish/Subscribe
-- 没有 Request/Response 模式
-
-**期望改进**：
-- [ ] 支持"期望响应"的事实：
-```json
-{
-  "fact_type": "db.query",
-  "expects_response": true,
-  "response_to": "fact_001",
-  "timeout_seconds": 30
-}
-```
+> **设计决策**：Request/Response 模式本质上是命令式交互（"我请求你响应"），与核心公理 1 "Facts, not commands" 冲突。协议中的 `exclusive` 模式 + `parent_fact_id` 因果链已经覆盖了这个需求：发布一个 `request` 类型的事实（`semantic_kind: request`），感兴趣的 Claw 自主 claim 并通过子事实返回结果。这是事实驱动的等价实现，无需引入 RPC 语义。
 
 ### 8.2 问题：批量操作
 

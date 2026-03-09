@@ -95,34 +95,38 @@ Every fact on the bus has two structural zones:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │               IMMUTABLE RECORD (the scent itself)            │
-│       frozen after publish · covered by hash + signature     │
+│           frozen after publish · covered by content_hash     │
 ├─────────────────────────────────────────────────────────────┤
 │  fact_id           unique identity                           │
-│  fact_type         taxonomy (code.review.needed)             │
-│  semantic_kind     observation / request / correction / ...  │
+│  fact_type         dot-notation taxonomy (code.review.needed)│
 │  payload           business data {}                          │
-│  domain_tags       domain labels                             │
-│  need_capabilities required skills to process                │
-│  priority          0-7 (CAN-style, lower = higher)          │
-│  mode              broadcast / exclusive                     │
 │  source_claw_id    who published this                        │
-│  causation_chain   ancestor fact_ids (lineage)               │
-│  subject_key       groups facts about the same subject       │
-│  supersedes        fact_id this replaces (knowledge update)  │
+│  created_at        unix timestamp                            │
+│  mode              broadcast / exclusive                     │
+│  priority          0-7 (CAN-style, lower = higher)          │
+│  ttl_seconds       time to live                              │
+│  parent_fact_id    direct causal parent (optional)           │
+│  causation_depth   depth in causal chain (0 = root)          │
 │  confidence        publisher's self-assessed trust [0, 1]    │
 │  content_hash      SHA-256(payload)                          │
-│  signature         bus HMAC authority stamp                   │
+│  domain_tags       domain labels (optional)                  │
+│  need_capabilities required skills to process (optional)     │
+│ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ Extensions ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ │
+│  semantic_kind     observation / request / correction / ...  │
+│  subject_key       groups facts about the same subject       │
+│  supersedes        fact_id this replaces (knowledge update)  │
 ├─────────────────────────────────────────────────────────────┤
 │               MUTABLE BUS STATE (the bus's assessment)       │
 │               managed exclusively by the engine              │
 ├─────────────────────────────────────────────────────────────┤
 │  state             workflow: published → claimed → resolved  │
-│  epistemic_state   truth: asserted → corroborated → ...      │
-│  claimed_by        which claw owns this                      │
-│  sequence_number   global monotonic counter                   │
-│  superseded_by     replaced by which newer fact              │
+│  claimed_by        which claw owns this (exclusive mode)     │
+│  resolved_at       resolution timestamp                      │
 │  corroborations    list of claw_ids that confirmed           │
 │  contradictions    list of claw_ids that disputed            │
+│ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ Extensions ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ │
+│  epistemic_state   truth: asserted → corroborated → ...      │
+│  superseded_by     replaced by which newer fact              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -133,12 +137,12 @@ The content of a published fact **never changes**. Only the bus's assessment of 
 Two orthogonal lifecycles run independently on every fact:
 
 ```
-WorkflowState (task progress):
-  CREATED → PUBLISHED → MATCHED → CLAIMED → RESOLVED
-                          │          │
-                          └──→ DEAD ←┘
+WorkflowState (task progress — Core §5.1):
+  PUBLISHED ──→ CLAIMED ──→ RESOLVED
+       │            │
+       └───→ DEAD ←─┘
 
-EpistemicState (truth lifecycle):
+EpistemicState (truth lifecycle — Extension 1):
   ASSERTED → CORROBORATED → CONSENSUS
       │            │
       └→ CONTESTED → REFUTED
