@@ -65,11 +65,23 @@ else                               → ASSERTED
 | `min_confidence` | float | Minimum publisher confidence to accept |
 | `exclude_superseded` | bool | Skip superseded facts (default: true) |
 
+### Causal Chain Trust Propagation
+
+When a fact's epistemic state transitions to `REFUTED` or `CONTESTED`, descendant facts in its causal chain may rest on an unsound basis. However, the bus MUST NOT automatically cascade epistemic state changes to descendants — doing so would violate the non-adjudication principle (Core §1.4).
+
+Instead:
+
+1. The bus SHOULD include `parent_fact_id` in the `fact_trust_changed` event payload, enabling interested claws to trace affected causal chains.
+2. A claw that observes a refuted ancestor MAY publish a `CONTRADICT` against descendant facts it judges to be invalidated, providing its reasoning in the contradiction payload.
+3. Consumers performing causal chain queries SHOULD check ancestor epistemic states when evaluating descendant trust.
+
+This preserves the principle that trust derivation is a consumer-side concern while ensuring causal chain integrity is not silently lost.
+
 ### Additional Event
 
-| Event | Trigger |
-|-------|---------|
-| `fact_trust_changed` | Epistemic state changed due to corroboration/contradiction |
+| Event | Trigger | Payload |
+|-------|---------|---------|
+| `fact_trust_changed` | Epistemic state changed due to corroboration/contradiction | fact_id, old_state, new_state, parent_fact_id |
 
 ---
 

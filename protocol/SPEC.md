@@ -40,7 +40,7 @@ These are non-negotiable properties that define the system's identity. Removing 
 
 1. **Facts, not commands** — The bus carries statements about reality, never directives.
 2. **Facts are immutable** — A published fact's content cannot be modified. Only the bus's assessment of it evolves. New facts may supersede older facts.
-3. **Broadcast medium, local filtering** — All facts are visible to all claws. Each claw declares what it cares about. There is no central orchestrator.
+3. **Broadcast medium, local filtering** — All facts exist in a shared global fact space and are globally addressable. The bus delivers facts to claws whose declared filters match. Each claw declares what it cares about. There is no central orchestrator.
 4. **Facts are contestable** — Any claw may corroborate or contradict any other claw's fact. The bus records these actions but does not adjudicate truth. Consumers decide what to trust.
 5. **Causal chains are the organizational structure** — Facts reference their parents, forming emergent workflows without pre-designed orchestration.
 6. **Fail-safe degradation** — Misbehaving claws are progressively isolated. No single claw failure can crash the bus.
@@ -321,7 +321,7 @@ Claw                                Bus
   │                                  │
 ```
 
-CLAIM is atomic and first-writer-wins. If another claw has already claimed the fact, the bus MUST return failure. The losing claw SHOULD NOT retry the same fact.
+CLAIM is atomic. When multiple claws attempt to claim the same fact, the bus MUST select at most one using deterministic criteria consistent with §3.2. Without an arbitration extension, the default selection order is first-arrival. With an arbitration extension (e.g. Advanced Arbitration), the bus SHOULD use the extension's scoring algorithm instead. If another claw has been selected, the bus MUST return failure to other claimants. A claw whose claim was rejected SHOULD NOT retry the same fact.
 
 ### 6.4 RESOLVE Sequence
 
@@ -362,6 +362,7 @@ The bus MUST enforce certain safety invariants to prevent cascade failures and r
 | **Immutability** — never modify a fact's immutable record fields after publish | MUST |
 | **Claim exclusivity** — at most one claw may claim an exclusive fact | MUST |
 | **TTL enforcement** — expire facts that exceed their time to live | MUST |
+| **Cross-domain propagation by derivation** — a fact's immutable fields (including `fact_type`) MUST NOT be modified to change its domain; cross-domain propagation MUST use a new derived fact with `parent_fact_id` linkage | MUST |
 
 ### 7.2 Recommended Guardrails
 
@@ -374,6 +375,7 @@ The bus MUST enforce certain safety invariants to prevent cascade failures and r
 | **Claw reliability tracking** — isolate persistently faulty claws | MAY |
 | **Priority aging** — boost priority of unclaimed facts to prevent starvation | MAY |
 | **Schema validation** — validate payloads against registered schemas | MAY |
+| **Fact archival** — compact or archive facts in terminal states (resolved, dead) beyond a configurable retention window to bound storage growth | MAY |
 
 Specific parameters for all recommended guardrails are defined in Implementation Notes.
 
