@@ -1,0 +1,19 @@
+---
+description: Review 时的范围约束红线；审查要点与 PR 规范见 git-workflow skill
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.vue"
+  - "**/*.java"
+  - "**/*.py"
+---
+
+# Review Constraints
+
+- Review only the files already changed, shown, or explicitly requested.
+- Do not broaden the review to the whole module, package, or repository.
+- Do not rewrite the implementation unless asked.
+- Do not provide style nitpicks unless they affect correctness.
+- Keep review short; report only top risks, omissions, and necessary tests.

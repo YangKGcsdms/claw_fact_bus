@@ -1,0 +1,15 @@
+---
+description: 测试时的范围约束红线；测试写法与 mock 策略见 testing-pattern skill
+globs:
+  - "**/*test*.*"
+  - "**/*spec*.*"
+  - "**/__tests__/**"
+---
+
+# Test Constraints
+
+- Add only the minimum necessary tests for the requested change.
+- Do not scan all test files by default.
+- Do not build a full test matrix unless requested.
+- Do not add redundant snapshot tests.
+- Do not over-mock when a simple direct test is enough.

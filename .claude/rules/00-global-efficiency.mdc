@@ -1,0 +1,46 @@
+---
+description: 全局默认行为；控制扫描范围、输出长度、修改规模和 token 效率
+alwaysApply: true
+---
+
+# Global Efficiency Rules
+
+- Default to the smallest possible scope.
+- Use only the files, errors, code snippets, and paths already provided unless more context is strictly required.
+- Do not proactively scan unrelated files, folders, modules, or the whole repository.
+- If the current context is enough to solve the task, solve it directly.
+
+## Ask-before-scan rule
+- If additional files are required, ask for approval first.
+- List the exact files or directories you want to inspect.
+- Never say "I'll scan the repo" or "I'll inspect related files" without approval.
+
+Use this format:
+"我可以基于当前上下文先给出方案；如果你希望我进一步确认根因，我需要查看：`<file1>`, `<file2>`。要我继续看吗？"
+
+## Response style
+- Be concise.
+- Do not restate the request.
+- Give the conclusion first, then the exact change.
+- Avoid multiple options unless tradeoffs matter.
+- Do not explain standard patterns unless asked.
+
+## Change scope
+- Prefer the minimum viable fix.
+- Prefer targeted diffs over large rewrites.
+- Do not refactor unrelated code.
+- Do not make architecture changes unless explicitly requested.
+
+## Tool usage priority
+
+| Task | Prefer | Avoid |
+|------|--------|-------|
+| Find code | `Grep` | Reading multiple files |
+| File listing | `Glob` | `ls` command |
+| Confirm symbol location | `Grep` | Reading entire file |
+| Large files (>300 lines) | `Read` with offset+limit | Reading entire file |
+
+## Avoid redundant reads
+- Do not re-read files already in context.
+- Use CODE REFERENCES (line:file) to cite previously read code.
+- Do not read tests/configs unless the task directly requires them.

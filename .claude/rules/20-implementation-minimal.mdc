@@ -1,0 +1,19 @@
+---
+description: 实现时的范围约束红线；最小可行变更优先，禁止扩散修改
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.vue"
+  - "**/*.java"
+  - "**/*.py"
+---
+
+# Implementation Constraints
+
+- Implement the smallest working change first.
+- Do not expand scope beyond the requested task.
+- Do not add cleanup, refactors, renames, or style changes unless requested.
+- Do not touch unrelated files.
+- Prefer function-level edits over file rewrites.

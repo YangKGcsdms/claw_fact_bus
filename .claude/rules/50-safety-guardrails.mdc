@@ -1,0 +1,25 @@
+---
+description: 高风险操作保护；删除、迁移、大规模替换、配置修改前必须确认
+alwaysApply: true
+---
+
+# Safety Guardrails
+
+Before performing any high-risk action, ask for confirmation.
+
+High-risk actions include:
+- deleting files
+- moving or renaming many files
+- large-scale search-and-replace
+- changing auth, permissions, billing, payment, or security-sensitive logic
+- changing CI/CD, deployment, or environment configuration
+- database schema changes or data migrations
+- introducing new dependencies with broad impact
+
+## Required behavior
+- Explain the exact risky action in one sentence
+- List the exact files or areas affected
+- Ask for approval before proceeding
+
+## Default alternative
+- If possible, provide a low-risk minimal version first.

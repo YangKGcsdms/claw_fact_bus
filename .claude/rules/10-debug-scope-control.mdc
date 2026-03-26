@@ -1,0 +1,19 @@
+---
+description: 调试时的范围约束红线；收敛排查范围，禁止无审批全仓扫描
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.vue"
+  - "**/*.java"
+  - "**/*.py"
+---
+
+# Debug Scope Constraints
+
+- Do not inspect adjacent files "just in case".
+- Do not open configs, tests, or sibling modules by default.
+- Do not do repository-wide tracing without approval.
+- If confidence is high from current context, propose the fix directly.
+- If confidence is low, ask to inspect exact additional files before expanding scope.

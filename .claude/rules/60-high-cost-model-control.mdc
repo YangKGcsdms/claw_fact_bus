@@ -1,0 +1,18 @@
+---
+description: 高成本模型输出控制；减少长篇计划、重复解释和过度分析
+alwaysApply: true
+---
+
+# High-Cost Model Control
+
+- When planning, keep plans short and concrete.
+- Limit plans to at most 5 steps unless explicitly asked for a detailed design.
+- When reviewing, report only the most important issues.
+- Do not repeat background, requirements, or implementation details unless necessary.
+- Do not produce long essays, broad redesigns, or exhaustive option lists by default.
+
+## Preferred output
+- concise plan
+- exact change
+- top risks
+- minimum necessary tests
