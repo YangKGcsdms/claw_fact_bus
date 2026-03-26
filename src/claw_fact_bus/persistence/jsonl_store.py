@@ -102,17 +102,23 @@ class JSONLFactStore:
 
         return sorted(results, key=lambda x: x.created_at, reverse=True)[:limit]
 
+    def _get_value(self, field) -> str:
+        """Safely get value from Enum or string field."""
+        if hasattr(field, 'value'):
+            return field.value
+        return str(field)
+
     def _fact_to_dict(self, fact: Fact) -> dict:
         """Convert Fact to serializable dict."""
         return {
             "fact_id": fact.fact_id,
             "fact_type": fact.fact_type,
-            "semantic_kind": fact.semantic_kind.value,
+            "semantic_kind": self._get_value(fact.semantic_kind),
             "payload": fact.payload,
             "domain_tags": fact.domain_tags,
             "need_capabilities": fact.need_capabilities,
-            "priority": fact.priority,
-            "mode": fact.mode.value,
+            "priority": self._get_value(fact.priority),
+            "mode": self._get_value(fact.mode),
             "source_claw_id": fact.source_claw_id,
             "causation_chain": fact.causation_chain,
             "causation_depth": fact.causation_depth,
@@ -125,8 +131,8 @@ class JSONLFactStore:
             "content_hash": fact.content_hash,
             "signature": fact.signature,
             "protocol_version": fact.protocol_version,
-            "state": fact.state.value,
-            "epistemic_state": fact.epistemic_state.value,
+            "state": self._get_value(fact.state),
+            "epistemic_state": self._get_value(fact.epistemic_state),
             "claimed_by": fact.claimed_by,
             "resolved_at": fact.resolved_at,
             "effective_priority": fact.effective_priority,
