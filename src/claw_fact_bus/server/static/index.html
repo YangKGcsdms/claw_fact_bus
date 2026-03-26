@@ -298,6 +298,185 @@
             color: #0a0a0f;
             border-color: #00d4aa;
         }
+
+        .expand-btn {
+            background: transparent;
+            border: 1px solid #2a2a3e;
+            color: #00d4aa;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            line-height: 1;
+        }
+        .expand-btn:hover { border-color: #00d4aa; }
+
+        .fact-detail-row td, .claw-detail-row td {
+            background: #12121a;
+            vertical-align: top;
+            padding: 1rem;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .detail-block {
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+        .detail-block strong {
+            display: block;
+            color: #888;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            margin-bottom: 0.35rem;
+        }
+        .mono-block {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.75rem;
+            background: #0a0a12;
+            border: 1px solid #2a2a3e;
+            border-radius: 6px;
+            padding: 0.75rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .chain-link {
+            background: transparent;
+            border: none;
+            color: #60a5fa;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+            text-decoration: underline;
+            padding: 0;
+        }
+        .chain-link:hover { color: #93c5fd; }
+        .dim { color: #666; }
+        .fact-id-link {
+            cursor: pointer;
+            color: #a5b4fc;
+            text-decoration: underline;
+        }
+        .fact-id-link:hover { color: #c7d2fe; }
+        .domains-cell {
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-panel {
+            background: #1a1a2e;
+            border: 1px solid #2a2a3e;
+            border-radius: 10px;
+            max-width: min(900px, 100%);
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #2a2a3e;
+            color: #00d4aa;
+            font-weight: 600;
+        }
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .modal-close:hover { color: #fff; }
+        .modal-body {
+            padding: 1rem 1.25rem;
+            overflow: auto;
+        }
+
+        .admin-key-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .admin-key-wrap label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+        }
+        .input-text {
+            background: #12121a;
+            border: 1px solid #2a2a3e;
+            color: #e0e0e0;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            min-width: 180px;
+        }
+        .input-text:focus {
+            outline: none;
+            border-color: #00d4aa;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+        }
+        .form-row label { color: #aaa; }
+        .btn-secondary {
+            background: #2a2a3e;
+            color: #e0e0e0;
+            border: 1px solid #3a3a4e;
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .btn-secondary:hover { background: #3a3a4e; }
+        .btn-danger {
+            background: #7f1d1d;
+            color: #fecaca;
+            border: 1px solid #991b1b;
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .btn-danger:hover { background: #991b1b; }
+        .admin-msg {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 0.5rem;
+        }
+        .admin-result {
+            margin-top: 0.5rem;
+            max-height: 200px;
+        }
     </style>
 </head>
 <body>
@@ -311,6 +490,10 @@
             </div>
             <button class="refresh-btn" onclick="refreshAll()">↻ <span data-i18n="refresh">Refresh</span></button>
             <button class="lang-switch" id="lang-switch" onclick="toggleLang()">中文</button>
+            <div class="admin-key-wrap">
+                <label for="admin-key" data-i18n="adminKeyLabel">Admin key</label>
+                <input type="password" class="input-text" id="admin-key" autocomplete="off" data-i18n-placeholder="adminKeyPlaceholder" placeholder="">
+            </div>
         </div>
     </div>
     
@@ -337,12 +520,65 @@
                 <div class="metric-value success" id="metric-resolution-rate">-%</div>
             </div>
         </div>
+
+        <div class="section control-panel">
+            <h2>🎛️ <span data-i18n="sectionControl">Bus Control Panel</span></h2>
+            <p class="admin-msg" data-i18n="controlHint">Dangerous operations require FACT_BUS_ADMIN_KEY on the server; enter the same key here.</p>
+            <div class="detail-grid">
+                <div class="detail-block">
+                    <strong data-i18n="labelFactCleanup">Fact cleanup</strong>
+                    <div class="form-row">
+                        <label data-i18n="labelStates">States (comma)</label>
+                        <input type="text" class="input-text" id="cleanup-states" placeholder="resolved,dead" style="min-width:220px">
+                    </div>
+                    <div class="form-row">
+                        <label data-i18n="labelOlderThan">Older than (sec)</label>
+                        <input type="number" class="input-text" id="cleanup-older" min="0" placeholder="0 = any" style="width:100px">
+                    </div>
+                    <div class="form-row">
+                        <label data-i18n="labelKeepRecent">Keep newest N</label>
+                        <input type="number" class="input-text" id="cleanup-keep" min="0" value="0" style="width:80px">
+                    </div>
+                    <div class="form-row">
+                        <label><input type="checkbox" id="cleanup-dry"> <span data-i18n="labelDryRun">Dry run (preview only)</span></label>
+                    </div>
+                    <div class="form-row">
+                        <button type="button" class="btn-secondary" onclick="adminCleanup()" data-i18n="btnCleanupRun">Run cleanup</button>
+                    </div>
+                    <div class="form-row">
+                        <label data-i18n="labelDeleteFactId">Delete one fact id</label>
+                        <input type="text" class="input-text" id="admin-delete-fact-id" placeholder="fact_id" style="min-width:200px">
+                        <button type="button" class="btn-danger" onclick="adminDeleteOneFact()" data-i18n="btnDeleteFact">Delete</button>
+                    </div>
+                    <pre class="mono-block admin-result" id="cleanup-result"></pre>
+                </div>
+                <div class="detail-block">
+                    <strong data-i18n="labelCausationAdmin">Causation chain</strong>
+                    <div class="form-row">
+                        <button type="button" class="btn-secondary" onclick="adminLoadBroken()" data-i18n="btnRefreshBroken">Refresh broken/orphans</button>
+                        <button type="button" class="btn-secondary" onclick="adminRepairChains()" data-i18n="btnRepairAll">Repair all chains</button>
+                    </div>
+                    <pre class="mono-block admin-result" id="causation-result"></pre>
+                </div>
+                <div class="detail-block">
+                    <strong data-i18n="labelStorage">Storage</strong>
+                    <div class="form-row">
+                        <button type="button" class="btn-secondary" onclick="adminLoadStorageStats()" data-i18n="btnRefreshStats">Refresh stats</button>
+                        <button type="button" class="btn-secondary" onclick="adminRunGc()" data-i18n="btnRunGc">Run GC</button>
+                        <button type="button" class="btn-secondary" onclick="adminCompact()" data-i18n="btnCompact">Compact log</button>
+                    </div>
+                    <pre class="mono-block admin-result" id="storage-stats"></pre>
+                    <pre class="mono-block admin-result" id="storage-action-result"></pre>
+                </div>
+            </div>
+        </div>
         
         <div class="section">
             <h2>🔌 <span data-i18n="sectionClaws">Connected Claws</span></h2>
             <table id="claws-table">
                 <thead>
                     <tr>
+                        <th style="width:2.5rem" data-i18n="thExpand"> </th>
                         <th>ID</th>
                         <th data-i18n="thName">Name</th>
                         <th data-i18n="thState">State</th>
@@ -351,7 +587,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="5" class="empty-state" data-i18n="loading">Loading...</td></tr>
+                    <tr><td colspan="6" class="empty-state" data-i18n="loading">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -368,17 +604,21 @@
             <table id="facts-table">
                 <thead>
                     <tr>
+                        <th style="width:2.5rem" data-i18n="thExpand"> </th>
                         <th data-i18n="thPriority">Priority</th>
                         <th>ID</th>
                         <th data-i18n="thType">Type</th>
                         <th data-i18n="thState">State</th>
+                        <th data-i18n="thEpistemic">Epistemic</th>
+                        <th data-i18n="thSemanticKind">Kind</th>
                         <th data-i18n="thSource">Source</th>
                         <th data-i18n="thClaimedBy">Claimed By</th>
                         <th data-i18n="thAge">Age</th>
+                        <th data-i18n="thDomains">Domains</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="7" class="empty-state" data-i18n="loading">Loading...</td></tr>
+                    <tr><td colspan="11" class="empty-state" data-i18n="loading">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -398,11 +638,25 @@
             </table>
         </div>
     </div>
+
+    <div class="modal-overlay" id="fact-modal" role="dialog" aria-modal="true">
+        <div class="modal-panel">
+            <div class="modal-header">
+                <span id="fact-modal-title" data-i18n="factModalTitle">Fact</span>
+                <button type="button" class="modal-close" onclick="closeFactModal()" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre class="mono-block" id="fact-modal-json"></pre>
+            </div>
+        </div>
+    </div>
     
     <script>
         const API_BASE = window.location.origin;
         let currentFactFilter = 'all';
         let refreshInterval;
+        let expandedFactId = null;
+        let expandedClawId = null;
 
         // =====================================================================
         // i18n
@@ -433,6 +687,19 @@
                 thAge: 'Age',
                 thFactType: 'Fact Type',
                 thVersions: 'Versions',
+                thExpand: ' ',
+                thEpistemic: 'Epistemic',
+                thSemanticKind: 'Kind',
+                thDomains: 'Domains',
+                labelParentFact: 'Parent fact',
+                labelCausationChain: 'Causation chain',
+                labelPayload: 'Payload',
+                labelFullFactJson: 'Full fact (JSON)',
+                labelClawFilter: 'Acceptance filter & link config',
+                labelClawMeta: 'Connection & counters',
+                noCausation: 'No upstream facts',
+                factModalTitle: 'Fact (API)',
+                clawDetailTitle: 'Claw details',
                 loading: 'Loading...',
                 filterAll: 'All',
                 filterPublished: 'Published',
@@ -450,6 +717,28 @@
                 timeMinAgo: '{0}m ago',
                 timeHrAgo: '{0}h ago',
                 switchLabel: '中文',
+                sectionControl: 'Bus Control Panel',
+                controlHint: 'Dangerous operations require FACT_BUS_ADMIN_KEY on the server; enter the same key here.',
+                adminKeyLabel: 'Admin key',
+                adminKeyPlaceholder: 'X-Admin-Key (optional if unset on server)',
+                labelFactCleanup: 'Fact cleanup',
+                labelStates: 'States (comma)',
+                labelOlderThan: 'Older than (sec)',
+                labelKeepRecent: 'Keep newest N',
+                labelDryRun: 'Dry run (preview only)',
+                btnCleanupRun: 'Run cleanup',
+                labelDeleteFactId: 'Delete one fact id',
+                btnDeleteFact: 'Delete',
+                labelCausationAdmin: 'Causation chain',
+                btnRefreshBroken: 'Refresh broken/orphans',
+                btnRepairAll: 'Repair all chains',
+                labelStorage: 'Storage',
+                btnRefreshStats: 'Refresh stats',
+                btnRunGc: 'Run GC',
+                btnCompact: 'Compact log',
+                confirmCleanup: 'Delete matching facts from the bus? This cannot be undone.',
+                confirmDeleteFact: 'Delete fact {0}?',
+                confirmRepair: 'Trim causation chains to existing facts?',
             },
             zh: {
                 title: 'Claw 事实总线 监控面板',
@@ -476,6 +765,19 @@
                 thAge: '时间',
                 thFactType: '事实类型',
                 thVersions: '版本',
+                thExpand: ' ',
+                thEpistemic: '认知状态',
+                thSemanticKind: '语义类型',
+                thDomains: '领域',
+                labelParentFact: '父事实',
+                labelCausationChain: '因果链',
+                labelPayload: '载荷',
+                labelFullFactJson: '完整事实 (JSON)',
+                labelClawFilter: '接收过滤与链接配置',
+                labelClawMeta: '连接与计数',
+                noCausation: '无上游事实',
+                factModalTitle: '事实 (API)',
+                clawDetailTitle: 'Claw 详情',
                 loading: '加载中...',
                 filterAll: '全部',
                 filterPublished: '已发布',
@@ -493,6 +795,28 @@
                 timeMinAgo: '{0}分钟前',
                 timeHrAgo: '{0}小时前',
                 switchLabel: 'EN',
+                sectionControl: '总线控制面板',
+                controlHint: '危险操作需要服务端设置 FACT_BUS_ADMIN_KEY；在此填写相同密钥。',
+                adminKeyLabel: '管理密钥',
+                adminKeyPlaceholder: 'X-Admin-Key（服务端未设置时可留空）',
+                labelFactCleanup: '事实清理',
+                labelStates: '状态（逗号分隔）',
+                labelOlderThan: '早于（秒）',
+                labelKeepRecent: '保留最新 N 条',
+                labelDryRun: '仅预览（不落库删除）',
+                btnCleanupRun: '执行清理',
+                labelDeleteFactId: '删除指定事实 ID',
+                btnDeleteFact: '删除',
+                labelCausationAdmin: '因果链',
+                btnRefreshBroken: '刷新断链/孤儿',
+                btnRepairAll: '修复全部因果链',
+                labelStorage: '存储',
+                btnRefreshStats: '刷新统计',
+                btnRunGc: '执行 GC',
+                btnCompact: '压缩日志',
+                confirmCleanup: '确定从总线删除匹配的事实？不可恢复。',
+                confirmDeleteFact: '删除事实 {0}？',
+                confirmRepair: '将因果链裁剪为仅含存在的事实？',
             },
         };
 
@@ -507,6 +831,9 @@
         function applyI18n() {
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 el.textContent = t(el.dataset.i18n);
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                el.placeholder = t(el.dataset.i18nPlaceholder);
             });
             document.getElementById('lang-switch').textContent = t('switchLabel');
             document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
@@ -527,6 +854,252 @@
             if (seconds < 60) return t('timeSecAgo', seconds);
             if (seconds < 3600) return t('timeMinAgo', Math.floor(seconds / 60));
             return t('timeHrAgo', Math.floor(seconds / 3600));
+        }
+
+        function escapeHtml(s) {
+            if (s === undefined || s === null) return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function formatJson(obj) {
+            try {
+                return JSON.stringify(obj, null, 2);
+            } catch (e) {
+                return String(obj);
+            }
+        }
+
+        function renderCausationChainButtons(chain) {
+            if (!chain || !chain.length) {
+                return `<span class="dim">${escapeHtml(t('noCausation'))}</span>`;
+            }
+            return chain.map((id, i) => {
+                const sep = i > 0 ? ' <span class="dim">→</span> ' : '';
+                return `${sep}<button type="button" class="chain-link" onclick="openFactModal('${id}')">${escapeHtml(id)}</button>`;
+            }).join('');
+        }
+
+        function renderFactDetailCell(f) {
+            const parent = f.parent_fact_id || '';
+            const chain = f.causation_chain || [];
+            const fullJson = formatJson(f);
+            const parentHtml = parent
+                ? `<button type="button" class="chain-link" onclick="openFactModal('${parent}')">${escapeHtml(parent)}</button>`
+                : '—';
+            return `
+                <div class="detail-grid">
+                    <div class="detail-block">
+                        <strong>${escapeHtml(t('labelParentFact'))}</strong>
+                        ${parentHtml}
+                    </div>
+                    <div class="detail-block">
+                        <strong>${escapeHtml(t('labelCausationChain'))}</strong>
+                        <div>${renderCausationChainButtons(chain)}</div>
+                    </div>
+                </div>
+                <div class="detail-block" style="margin-bottom:0.75rem">
+                    <strong>${escapeHtml(t('labelPayload'))}</strong>
+                    <pre class="mono-block">${escapeHtml(formatJson(f.payload))}</pre>
+                </div>
+                <div class="detail-block">
+                    <strong>${escapeHtml(t('labelFullFactJson'))}</strong>
+                    <pre class="mono-block">${escapeHtml(fullJson)}</pre>
+                </div>
+            `;
+        }
+
+        function renderClawDetailCell(c) {
+            const filter = c.acceptance_filter || {};
+            const meta = {
+                description: c.description,
+                max_concurrent_claims: c.max_concurrent_claims,
+                transmit_error_counter: c.transmit_error_counter,
+                receive_error_counter: c.receive_error_counter,
+                connected_at: c.connected_at,
+                last_heartbeat: c.last_heartbeat,
+            };
+            return `
+                <div class="detail-block" style="margin-bottom:0.75rem">
+                    <strong>${escapeHtml(t('labelClawMeta'))}</strong>
+                    <pre class="mono-block">${escapeHtml(formatJson(meta))}</pre>
+                </div>
+                <div class="detail-block">
+                    <strong>${escapeHtml(t('labelClawFilter'))}</strong>
+                    <pre class="mono-block">${escapeHtml(formatJson(filter))}</pre>
+                </div>
+            `;
+        }
+
+        function toggleFactRow(factId) {
+            expandedFactId = expandedFactId === factId ? null : factId;
+            fetchFacts();
+        }
+
+        function toggleClawRow(clawId) {
+            expandedClawId = expandedClawId === clawId ? null : clawId;
+            fetchClaws();
+        }
+
+        async function openFactModal(factId) {
+            const modal = document.getElementById('fact-modal');
+            const pre = document.getElementById('fact-modal-json');
+            const titleEl = document.getElementById('fact-modal-title');
+            pre.textContent = t('loading');
+            titleEl.textContent = t('factModalTitle');
+            modal.classList.add('open');
+            try {
+                const response = await fetch(`${API_BASE}/facts/${encodeURIComponent(factId)}`);
+                if (!response.ok) {
+                    pre.textContent = `HTTP ${response.status}: ${response.statusText}`;
+                    return;
+                }
+                const data = await response.json();
+                titleEl.textContent = `${t('factModalTitle')} — ${factId}`;
+                pre.textContent = formatJson(data);
+            } catch (err) {
+                pre.textContent = String(err);
+            }
+        }
+
+        function closeFactModal() {
+            document.getElementById('fact-modal').classList.remove('open');
+        }
+
+        function getAdminHeaders() {
+            const key = document.getElementById('admin-key').value.trim();
+            const h = { 'Content-Type': 'application/json' };
+            if (key) h['X-Admin-Key'] = key;
+            return h;
+        }
+
+        async function adminFetch(url, opts = {}) {
+            const headers = { ...getAdminHeaders(), ...(opts.headers || {}) };
+            return fetch(url, { ...opts, headers });
+        }
+
+        async function adminCleanup() {
+            const dry = document.getElementById('cleanup-dry').checked;
+            if (!dry && !confirm(t('confirmCleanup'))) return;
+            const statesRaw = document.getElementById('cleanup-states').value.trim();
+            const fact_states = statesRaw ? statesRaw.split(',').map(s => s.trim()).filter(Boolean) : null;
+            const olderVal = document.getElementById('cleanup-older').value.trim();
+            const older_than_seconds = olderVal === '' ? null : Number(olderVal);
+            const keep = parseInt(document.getElementById('cleanup-keep').value, 10) || 0;
+            const pre = document.getElementById('cleanup-result');
+            pre.textContent = t('loading');
+            try {
+                const r = await adminFetch(`${API_BASE}/admin/facts/cleanup`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        fact_states,
+                        older_than_seconds,
+                        keep_most_recent: keep,
+                        dry_run: dry,
+                    }),
+                });
+                const text = await r.text();
+                try {
+                    pre.textContent = r.ok ? formatJson(JSON.parse(text)) : text;
+                } catch {
+                    pre.textContent = text;
+                }
+                if (r.ok && !dry) refreshAll();
+            } catch (e) {
+                pre.textContent = String(e);
+            }
+        }
+
+        async function adminDeleteOneFact() {
+            const id = document.getElementById('admin-delete-fact-id').value.trim();
+            if (!id) return;
+            if (!confirm(t('confirmDeleteFact', id))) return;
+            const pre = document.getElementById('cleanup-result');
+            pre.textContent = t('loading');
+            try {
+                const r = await adminFetch(`${API_BASE}/admin/facts/${encodeURIComponent(id)}`, {
+                    method: 'DELETE',
+                });
+                pre.textContent = await r.text();
+                if (r.ok) refreshAll();
+            } catch (e) {
+                pre.textContent = String(e);
+            }
+        }
+
+        async function adminLoadBroken() {
+            const pre = document.getElementById('causation-result');
+            pre.textContent = t('loading');
+            try {
+                const [rb, ro] = await Promise.all([
+                    adminFetch(`${API_BASE}/admin/causation/broken-chains`),
+                    adminFetch(`${API_BASE}/admin/causation/orphans`),
+                ]);
+                const jb = await rb.json();
+                const jo = await ro.json();
+                pre.textContent = formatJson({ broken: jb.broken, orphans: jo.orphans });
+            } catch (e) {
+                pre.textContent = String(e);
+            }
+        }
+
+        async function adminRepairChains() {
+            if (!confirm(t('confirmRepair'))) return;
+            const pre = document.getElementById('causation-result');
+            pre.textContent = t('loading');
+            try {
+                const r = await adminFetch(`${API_BASE}/admin/causation/repair`, {
+                    method: 'POST',
+                    body: JSON.stringify({}),
+                });
+                const text = await r.text();
+                try {
+                    pre.textContent = r.ok ? formatJson(JSON.parse(text)) : text;
+                } catch {
+                    pre.textContent = text;
+                }
+                if (r.ok) refreshAll();
+            } catch (e) {
+                pre.textContent = String(e);
+            }
+        }
+
+        async function adminLoadStorageStats() {
+            const pre = document.getElementById('storage-stats');
+            pre.textContent = t('loading');
+            try {
+                const r = await adminFetch(`${API_BASE}/admin/storage/stats`);
+                const text = await r.text();
+                pre.textContent = r.ok ? formatJson(JSON.parse(text)) : text;
+            } catch (e) {
+                pre.textContent = String(e);
+            }
+        }
+
+        async function adminRunGc() {
+            const pre = document.getElementById('storage-action-result');
+            pre.textContent = t('loading');
+            try {
+                const r = await adminFetch(`${API_BASE}/admin/storage/gc`, { method: 'POST' });
+                pre.textContent = await r.text();
+                if (r.ok) refreshAll();
+            } catch (e) {
+                pre.textContent = String(e);
+            }
+        }
+
+        async function adminCompact() {
+            const pre = document.getElementById('storage-action-result');
+            pre.textContent = t('loading');
+            try {
+                const r = await adminFetch(`${API_BASE}/admin/storage/compact`, { method: 'POST' });
+                pre.textContent = await r.text();
+            } catch (e) {
+                pre.textContent = String(e);
+            }
         }
         
         function formatReliability(score) {
@@ -592,19 +1165,27 @@
                 
                 const tbody = document.querySelector('#claws-table tbody');
                 if (claws.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="empty-state">${t('emptyClaws')}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${t('emptyClaws')}</td></tr>`;
                     return;
                 }
                 
-                tbody.innerHTML = claws.map(c => `
+                tbody.innerHTML = claws.map(c => {
+                    const caps = (c.capabilities || []).join(', ') || '-';
+                    const isOpen = expandedClawId === c.claw_id;
+                    return `
                     <tr>
-                        <td><code>${c.claw_id}</code></td>
-                        <td>${c.name}</td>
+                        <td><button type="button" class="expand-btn" onclick="toggleClawRow('${c.claw_id}')">${isOpen ? '▼' : '▶'}</button></td>
+                        <td><code>${escapeHtml(c.claw_id)}</code></td>
+                        <td>${escapeHtml(c.name)}</td>
                         <td>${getStateBadge(c.state)}</td>
-                        <td>${c.capabilities.join(', ') || '-'}</td>
+                        <td>${escapeHtml(caps)}</td>
                         <td>${formatReliability(c.reliability_score)}</td>
                     </tr>
-                `).join('');
+                    <tr class="claw-detail-row" style="display:${isOpen ? 'table-row' : 'none'}">
+                        <td colspan="6">${renderClawDetailCell(c)}</td>
+                    </tr>
+                `;
+                }).join('');
             } catch (err) {
                 console.error('Failed to fetch claws:', err);
             }
@@ -623,21 +1204,36 @@
                 const tbody = document.querySelector('#facts-table tbody');
                 if (facts.length === 0) {
                     const filterLabel = currentFactFilter === 'all' ? '' : t('filter' + currentFactFilter.charAt(0).toUpperCase() + currentFactFilter.slice(1));
-                    tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${t('emptyFacts', filterLabel)}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="11" class="empty-state">${t('emptyFacts', filterLabel)}</td></tr>`;
                     return;
                 }
                 
-                tbody.innerHTML = facts.map(f => `
+                tbody.innerHTML = facts.map(f => {
+                    const isOpen = expandedFactId === f.fact_id;
+                    const domCell = (f.domain_tags && f.domain_tags.length)
+                        ? `<span class="domains-cell" title="${escapeHtml((f.domain_tags || []).join(', '))}">${escapeHtml((f.domain_tags || []).join(', '))}</span>`
+                        : '—';
+                    const src = f.source_claw_id || '';
+                    const claim = f.claimed_by || '';
+                    return `
                     <tr>
-                        <td>${getPriorityIndicator(f.effective_priority || f.priority)}</td>
-                        <td><code>${f.fact_id.substring(0, 8)}...</code></td>
-                        <td>${f.fact_type}</td>
+                        <td><button type="button" class="expand-btn" onclick="toggleFactRow('${f.fact_id}')">${isOpen ? '▼' : '▶'}</button></td>
+                        <td>${getPriorityIndicator(f.effective_priority != null ? f.effective_priority : f.priority)}</td>
+                        <td><code class="fact-id-link" onclick="openFactModal('${f.fact_id}')" title="${escapeHtml(f.fact_id)}">${escapeHtml(f.fact_id)}</code></td>
+                        <td>${escapeHtml(f.fact_type)}</td>
                         <td>${getFactStateBadge(f.state)}</td>
-                        <td><code>${f.source_claw_id.substring(0, 8)}</code></td>
-                        <td>${f.claimed_by ? `<code>${f.claimed_by.substring(0, 8)}</code>` : '-'}</td>
+                        <td><span class="fact-state">${escapeHtml(f.epistemic_state || '')}</span></td>
+                        <td>${escapeHtml(f.semantic_kind || '')}</td>
+                        <td><code>${escapeHtml(src)}</code></td>
+                        <td>${claim ? `<code>${escapeHtml(claim)}</code>` : '-'}</td>
                         <td>${timeAgo(f.created_at)}</td>
+                        <td>${domCell}</td>
                     </tr>
-                `).join('');
+                    <tr class="fact-detail-row" style="display:${isOpen ? 'table-row' : 'none'}">
+                        <td colspan="11">${renderFactDetailCell(f)}</td>
+                    </tr>
+                `;
+                }).join('');
             } catch (err) {
                 console.error('Failed to fetch facts:', err);
             }
@@ -672,6 +1268,7 @@
         // =====================================================================
         function filterFacts(state) {
             currentFactFilter = state;
+            expandedFactId = null;
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.i18n === 'filter' + state.charAt(0).toUpperCase() + state.slice(1) || (state === 'all' && btn.dataset.i18n === 'filterAll'));
             });
@@ -737,9 +1334,22 @@
         // =====================================================================
         document.addEventListener('DOMContentLoaded', () => {
             applyI18n();
+            const ak = document.getElementById('admin-key');
+            if (ak) {
+                ak.value = localStorage.getItem('factbus_admin_key') || '';
+                ak.addEventListener('change', () => {
+                    localStorage.setItem('factbus_admin_key', ak.value);
+                });
+            }
             refreshAll();
             setupAutoRefresh();
             connectWebSocket();
+            document.getElementById('fact-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'fact-modal') closeFactModal();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeFactModal();
+            });
         });
     </script>
 </body>

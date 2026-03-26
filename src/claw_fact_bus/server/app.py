@@ -89,14 +89,21 @@ class FactResponse(BaseModel):
     state: str
     epistemic_state: str = "asserted"
     created_at: float
+    ttl_seconds: int = 300
     claimed_by: Optional[str] = None
     effective_priority: Optional[int] = None
+    causation_depth: int = 0
+    causation_chain: list[str] = Field(default_factory=list)
+    parent_fact_id: str = ""
     confidence: float = 1.0
     subject_key: str = ""
     supersedes: str = ""
     superseded_by: str = ""
+    content_hash: str = ""
+    schema_version: str = "1.0.0"
     signature: str = ""
     sequence_number: int = 0
+    resolved_at: Optional[float] = None
     corroborations: list[str] = Field(default_factory=list)
     contradictions: list[str] = Field(default_factory=list)
     protocol_version: str = "2.0.0"
@@ -138,6 +145,19 @@ class CorroborateRequest(BaseModel):
 
 class ContradictRequest(BaseModel):
     claw_id: str
+
+
+class CleanupFactsRequest(BaseModel):
+    """Admin bulk fact cleanup."""
+
+    fact_states: Optional[list[str]] = None
+    older_than_seconds: Optional[float] = None
+    keep_most_recent: int = 0
+    dry_run: bool = False
+
+
+class CausationRepairRequest(BaseModel):
+    fact_id: Optional[str] = None
 
 
 @asynccontextmanager
@@ -454,16 +474,23 @@ def create_app() -> FastAPI:
 
     @app.get("/claws")
     async def list_claws():
-        """List all connected claws."""
+        """List all connected claws with full link / filter configuration."""
         engine = get_engine()
 
         return [
             {
                 "claw_id": c.claw_id,
                 "name": c.name,
+                "description": c.description,
                 "state": c.state.value,
                 "reliability_score": c.reliability_score,
                 "capabilities": c.acceptance_filter.capability_offer,
+                "acceptance_filter": _acceptance_filter_to_dict(c.acceptance_filter),
+                "max_concurrent_claims": c.max_concurrent_claims,
+                "transmit_error_counter": c.transmit_error_counter,
+                "receive_error_counter": c.receive_error_counter,
+                "connected_at": c.connected_at,
+                "last_heartbeat": c.last_heartbeat,
             }
             for c in engine._claws.values()
         ]
@@ -667,6 +694,87 @@ def create_app() -> FastAPI:
 
         return metrics
 
+    @app.post("/admin/facts/cleanup")
+    async def admin_cleanup_facts(
+        request: CleanupFactsRequest = Body(...),
+        auth_err=Depends(_verify_admin),
+    ):
+        """Bulk delete facts by state / age; optional dry-run preview."""
+        if isinstance(auth_err, JSONResponse):
+            return auth_err
+        engine = get_engine()
+        return await engine.admin_cleanup_facts(
+            fact_states=request.fact_states,
+            older_than_seconds=request.older_than_seconds,
+            keep_most_recent=request.keep_most_recent,
+            dry_run=request.dry_run,
+        )
+
+    @app.delete("/admin/facts/{fact_id}")
+    async def admin_delete_fact(fact_id: str, auth_err=Depends(_verify_admin)):
+        """Force-remove a fact from the bus (purge + log)."""
+        if isinstance(auth_err, JSONResponse):
+            return auth_err
+        engine = get_engine()
+        ok, msg = await engine.admin_delete_fact(fact_id)
+        if not ok:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"error": msg},
+            )
+        return {"success": True, "fact_id": fact_id}
+
+    @app.get("/admin/causation/broken-chains")
+    async def admin_broken_chains(auth_err=Depends(_verify_admin)):
+        """List facts whose causation_chain references missing ancestor ids."""
+        if isinstance(auth_err, JSONResponse):
+            return auth_err
+        engine = get_engine()
+        return {"broken": engine.find_broken_chains()}
+
+    @app.get("/admin/causation/orphans")
+    async def admin_orphan_facts(auth_err=Depends(_verify_admin)):
+        """Same as broken-chains (upstream reference missing)."""
+        if isinstance(auth_err, JSONResponse):
+            return auth_err
+        engine = get_engine()
+        return {"orphans": engine.find_orphan_facts()}
+
+    @app.post("/admin/causation/repair")
+    async def admin_repair_causation(
+        request: CausationRepairRequest = Body(default=CausationRepairRequest()),
+        auth_err=Depends(_verify_admin),
+    ):
+        """Trim causation_chain to existing fact ids; log causation_repair events."""
+        if isinstance(auth_err, JSONResponse):
+            return auth_err
+        engine = get_engine()
+        return await engine.repair_causation_chains(fact_id=request.fact_id)
+
+    @app.get("/admin/storage/stats")
+    async def admin_storage_stats(auth_err=Depends(_verify_admin)):
+        """Storage / log stats (JSONL size, entry count)."""
+        if isinstance(auth_err, JSONResponse):
+            return auth_err
+        engine = get_engine()
+        return {"store": engine.get_stats()["store"], "facts_total": len(engine._facts)}
+
+    @app.post("/admin/storage/compact")
+    async def admin_storage_compact(auth_err=Depends(_verify_admin)):
+        """Rewrite JSONL log to drop entries for facts no longer in memory."""
+        if isinstance(auth_err, JSONResponse):
+            return auth_err
+        engine = get_engine()
+        return await engine.admin_compact_store()
+
+    @app.post("/admin/storage/gc")
+    async def admin_storage_gc(auth_err=Depends(_verify_admin)):
+        """Run in-memory GC once (same rules as background GC)."""
+        if isinstance(auth_err, JSONResponse):
+            return auth_err
+        engine = get_engine()
+        return await engine.admin_run_gc()
+
     # =============================================================================
     # WebSocket Endpoint
     # =============================================================================
@@ -791,6 +899,21 @@ def create_app() -> FastAPI:
     # Helpers
     # =============================================================================
 
+    def _acceptance_filter_to_dict(af: AcceptanceFilter) -> dict:
+        """Serialize acceptance filter for API / dashboard."""
+        return {
+            "capability_offer": af.capability_offer,
+            "domain_interests": af.domain_interests,
+            "fact_type_patterns": af.fact_type_patterns,
+            "priority_range": list(af.priority_range),
+            "modes": [m.value for m in af.modes],
+            "semantic_kinds": [sk.value for sk in af.semantic_kinds],
+            "min_epistemic_rank": af.min_epistemic_rank,
+            "min_confidence": af.min_confidence,
+            "exclude_superseded": af.exclude_superseded,
+            "subject_key_patterns": af.subject_key_patterns,
+        }
+
     def _fact_to_response(fact: Fact) -> dict:
         """Convert Fact to API response dict."""
         return {
@@ -810,13 +933,17 @@ def create_app() -> FastAPI:
             "claimed_by": fact.claimed_by,
             "effective_priority": fact.effective_priority,
             "causation_depth": fact.causation_depth,
+            "causation_chain": list(fact.causation_chain),
             "parent_fact_id": fact.parent_fact_id,
             "confidence": fact.confidence,
             "subject_key": fact.subject_key,
             "supersedes": fact.supersedes,
             "superseded_by": fact.superseded_by,
+            "content_hash": fact.content_hash,
+            "schema_version": fact.schema_version,
             "signature": fact.signature,
             "sequence_number": fact.sequence_number,
+            "resolved_at": fact.resolved_at,
             "corroborations": fact.corroborations,
             "contradictions": fact.contradictions,
             "protocol_version": fact.protocol_version,

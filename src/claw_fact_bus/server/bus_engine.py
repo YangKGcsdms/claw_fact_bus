@@ -127,6 +127,17 @@ class BusEngine:
                     self._facts[fact.fact_id].state = fact.state
                     self._facts[fact.fact_id].claimed_by = fact.claimed_by
                     self._facts[fact.fact_id].resolved_at = fact.resolved_at
+            elif event == "purge":
+                if fact.fact_id in self._facts:
+                    removed = self._facts.pop(fact.fact_id)
+                    if removed.subject_key:
+                        sk = f"{removed.subject_key}:{removed.fact_type}"
+                        if self._subject_index.get(sk) == fact.fact_id:
+                            del self._subject_index[sk]
+            elif event == "causation_repair":
+                if fact.fact_id in self._facts:
+                    self._facts[fact.fact_id].causation_chain = list(fact.causation_chain)
+                    self._facts[fact.fact_id].causation_depth = fact.causation_depth
             recovered += 1
 
         for fact in self._facts.values():
@@ -160,33 +171,38 @@ class BusEngine:
     GC_MAX_FACTS = 10_000
     COMPACTION_INTERVAL_SECONDS = 3600
 
+    def _gc_collect_candidates(self, now: float) -> list[str]:
+        """Return fact_ids eligible for GC (same rules as background GC)."""
+        to_delete: list[str] = []
+        for fid, fact in self._facts.items():
+            if fact.state == FactState.RESOLVED:
+                age = now - (fact.resolved_at or fact.created_at)
+                if age > self.GC_RETAIN_RESOLVED_SECONDS:
+                    to_delete.append(fid)
+            elif fact.state == FactState.DEAD:
+                age = now - fact.created_at
+                if age > self.GC_RETAIN_DEAD_SECONDS:
+                    to_delete.append(fid)
+
+        remaining = len(self._facts) - len(to_delete)
+        if remaining > self.GC_MAX_FACTS:
+            delete_set = set(to_delete)
+            terminal = sorted(
+                ((fid, f) for fid, f in self._facts.items()
+                 if f.state in (FactState.RESOLVED, FactState.DEAD) and fid not in delete_set),
+                key=lambda x: x[1].created_at,
+            )
+            overflow = remaining - self.GC_MAX_FACTS
+            to_delete.extend(fid for fid, _ in terminal[:overflow])
+        return to_delete
+
     async def _gc_loop(self) -> None:
         while True:
             await asyncio.sleep(self.GC_INTERVAL_SECONDS)
             now = time.time()
             to_delete: list[str] = []
             async with self._fact_lock:
-                for fid, fact in self._facts.items():
-                    if fact.state == FactState.RESOLVED:
-                        age = now - (fact.resolved_at or fact.created_at)
-                        if age > self.GC_RETAIN_RESOLVED_SECONDS:
-                            to_delete.append(fid)
-                    elif fact.state == FactState.DEAD:
-                        age = now - fact.created_at
-                        if age > self.GC_RETAIN_DEAD_SECONDS:
-                            to_delete.append(fid)
-
-                remaining = len(self._facts) - len(to_delete)
-                if remaining > self.GC_MAX_FACTS:
-                    delete_set = set(to_delete)
-                    terminal = sorted(
-                        ((fid, f) for fid, f in self._facts.items()
-                         if f.state in (FactState.RESOLVED, FactState.DEAD) and fid not in delete_set),
-                        key=lambda x: x[1].created_at,
-                    )
-                    overflow = remaining - self.GC_MAX_FACTS
-                    to_delete.extend(fid for fid, _ in terminal[:overflow])
-
+                to_delete = self._gc_collect_candidates(now)
                 for fid in to_delete:
                     del self._facts[fid]
             if to_delete:
@@ -604,6 +620,127 @@ class BusEngine:
     def get_claw_activity(self, claw_id: str, limit: int = 50) -> list[dict]:
         entries = list(self._claw_activity.get(claw_id, []))
         return entries[-limit:][::-1]
+
+    # -------------------------------------------------------------------------
+    # Admin: cleanup, causation repair, storage
+    # -------------------------------------------------------------------------
+
+    def _unlink_subject_index(self, fact: Fact) -> None:
+        if fact.subject_key:
+            sk = f"{fact.subject_key}:{fact.fact_type}"
+            if self._subject_index.get(sk) == fact.fact_id:
+                del self._subject_index[sk]
+
+    def _delete_fact_unlocked(self, fact_id: str) -> tuple[bool, str]:
+        if fact_id not in self._facts:
+            return False, "fact not found"
+        fact = self._facts.pop(fact_id)
+        if fact.claimed_by and fact.state in (FactState.CLAIMED, FactState.PROCESSING):
+            if self._active_claims.get(fact.claimed_by, 0) > 0:
+                self._active_claims[fact.claimed_by] -= 1
+        self._unlink_subject_index(fact)
+        self._store.append(fact, "purge", {"reason": "admin"})
+        return True, "ok"
+
+    async def admin_delete_fact(self, fact_id: str) -> tuple[bool, str]:
+        async with self._fact_lock:
+            return self._delete_fact_unlocked(fact_id)
+
+    def find_broken_chains(self) -> list[dict]:
+        """Facts whose causation_chain references missing ancestor fact_ids."""
+        out: list[dict] = []
+        for fid, fact in self._facts.items():
+            missing = [a for a in fact.causation_chain if a not in self._facts]
+            if missing:
+                out.append({
+                    "fact_id": fid,
+                    "missing_ancestors": missing,
+                    "causation_chain": list(fact.causation_chain),
+                })
+        return out
+
+    def find_orphan_facts(self) -> list[dict]:
+        """Alias: facts with broken upstream chain (same as find_broken_chains)."""
+        return self.find_broken_chains()
+
+    async def repair_causation_chains(self, fact_id: str | None = None) -> dict:
+        """Drop missing ids from causation_chain; persist as causation_repair events."""
+        async with self._fact_lock:
+            to_touch: list[Fact] = []
+            if fact_id:
+                if fact_id in self._facts:
+                    to_touch = [self._facts[fact_id]]
+            else:
+                for f in self._facts.values():
+                    if any(a not in self._facts for a in f.causation_chain):
+                        to_touch.append(f)
+            repaired: list[str] = []
+            for fact in to_touch:
+                new_chain = [a for a in fact.causation_chain if a in self._facts]
+                if new_chain != fact.causation_chain:
+                    fact.causation_chain = new_chain
+                    fact.causation_depth = len(new_chain)
+                    self._store.append(fact, "causation_repair", {})
+                    repaired.append(fact.fact_id)
+            return {"repaired": repaired, "count": len(repaired)}
+
+    async def admin_cleanup_facts(
+        self,
+        fact_states: list[str] | None,
+        older_than_seconds: float | None,
+        keep_most_recent: int,
+        dry_run: bool,
+    ) -> dict:
+        """
+        Delete facts matching state filter (default: resolved+dead), optional age,
+        and keep the ``keep_most_recent`` newest matches (by created_at).
+        """
+        if not fact_states:
+            state_filter = {FactState.RESOLVED.value, FactState.DEAD.value}
+        else:
+            state_filter = set(fact_states)
+        async with self._fact_lock:
+            now = time.time()
+            candidates: list[tuple[str, Fact]] = []
+            for fid, fact in self._facts.items():
+                if fact.state.value not in state_filter:
+                    continue
+                if older_than_seconds is not None:
+                    if now - fact.created_at < older_than_seconds:
+                        continue
+                candidates.append((fid, fact))
+            candidates.sort(key=lambda x: x[1].created_at, reverse=True)
+            if keep_most_recent > 0:
+                to_delete = candidates[keep_most_recent:]
+            else:
+                to_delete = candidates
+            ids = [fid for fid, _ in to_delete]
+            if dry_run:
+                return {
+                    "dry_run": True,
+                    "count": len(ids),
+                    "fact_ids": ids,
+                }
+            deleted: list[str] = []
+            for fid in ids:
+                ok, _ = self._delete_fact_unlocked(fid)
+                if ok:
+                    deleted.append(fid)
+            return {"dry_run": False, "count": len(deleted), "deleted": deleted}
+
+    async def admin_run_gc(self) -> dict:
+        """Run the same in-memory GC as the background loop (no purge log entries)."""
+        async with self._fact_lock:
+            now = time.time()
+            to_delete = self._gc_collect_candidates(now)
+            for fid in to_delete:
+                del self._facts[fid]
+        return {"removed": len(to_delete), "fact_ids": to_delete}
+
+    async def admin_compact_store(self) -> dict:
+        async with self._fact_lock:
+            removed = self._store.compact(self._facts)
+        return {"stale_entries_removed": removed}
 
     # -------------------------------------------------------------------------
     # Internal: Dispatch and Notifications
