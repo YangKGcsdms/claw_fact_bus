@@ -334,6 +334,7 @@ def create_app() -> FastAPI:
         result_facts = [
             Fact(
                 fact_type=rf.get("fact_type", ""),
+                semantic_kind=SemanticKind(rf.get("semantic_kind", "resolution")),
                 payload=rf.get("payload", {}),
                 domain_tags=rf.get("domain_tags", []),
                 need_capabilities=rf.get("need_capabilities", []),

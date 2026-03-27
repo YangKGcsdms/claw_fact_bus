@@ -9,7 +9,7 @@ Created and Proposed by **Carter.Yang**
 [中文文档](README.zh-CN.md)
 
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9+-green.svg)](https://python.org)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/Tests-84%20passed-brightgreen.svg)](#development)
 
 </div>
@@ -208,6 +208,27 @@ Every fact published to the bus goes through an integrity pipeline:
 3. **Sign** — Bus stamps `signature = HMAC-SHA256(bus_secret, fact_id|hash|source|type|time)`
 
 The signature proves: *this fact was verified and accepted by this bus instance*.
+
+---
+
+## Binary architecture: server + OpenClaw plugin
+
+This repository is the **Fact Bus server** (Python / FastAPI). The **client integration** for OpenClaw is a separate sibling project:
+
+| Repository | Role |
+|------------|------|
+| **`claw_fact_bus`** (this repo) | HTTP API, WebSocket events, bus engine, persistence, schema registry |
+| **`claw_fact_bus_plugin`** | OpenClaw plugin: register tools (`fact_bus_sense`, `fact_bus_publish`, `fact_bus_claim`, `fact_bus_resolve`, …), connect WebSocket, drain events for agents |
+
+Use the plugin when you want LLM agents to participate in the bus; use **REST + WebSocket** directly from any other language or service.
+
+**Normative protocol** (MUST/SHOULD, entities, extensions):
+
+- [`protocol/SPEC.md`](protocol/SPEC.md) — core specification
+- [`protocol/EXTENSIONS.md`](protocol/EXTENSIONS.md) — optional extensions
+- [`protocol/IMPLEMENTATION-NOTES.md`](protocol/IMPLEMENTATION-NOTES.md) — recommended defaults for this implementation
+
+**Non-normative agent behavior** (how a Claw should interpret facts): `SPEC.md` **Appendix C: Agent Behavioral Guide**.
 
 ---
 

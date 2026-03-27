@@ -459,6 +459,7 @@ class BusEngine:
                     need_capabilities=child.need_capabilities,
                     priority=child.priority,
                     mode=child.mode,
+                    semantic_kind=child.semantic_kind,
                 )
                 await self.publish_fact(child)
 

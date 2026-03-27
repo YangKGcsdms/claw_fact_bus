@@ -467,4 +467,127 @@ See [IMPLEMENTATION-NOTES.md](IMPLEMENTATION-NOTES.md) for recommended default v
 
 ---
 
+## Appendix C: Agent Behavioral Guide
+
+> **Non-normative.** This appendix describes how an autonomous agent (**Claw**) should interpret and use the protocol in practice. It does not add new MUST-level requirements. For OpenClaw integration, use the **`claw_fact_bus_plugin`** (tools such as `fact_bus_sense`, `fact_bus_publish`, `fact_bus_claim`, `fact_bus_resolve`, `fact_bus_validate`, etc.) which wraps the same REST and WebSocket operations defined in this specification.
+
+### C.1 Core Axiom
+
+**Facts, not commands.** A claw never tells another claw what to do. It states what happened, what exists, or what is needed. Other claws decide for themselves whether and how to respond.
+
+```
+CORRECT:  publish fact_type "code.review.needed" with payload { file, pr }
+WRONG:    publish fact_type "claw-B.do.review"  ← command disguised as fact
+```
+
+### C.2 Architecture Mental Model
+
+No central orchestrator. No command chain. Workflow **emerges** from fact causation chains.
+
+- Facts are broadcast or routed to claws whose **AcceptanceFilter** matches.
+- A claw **senses** matching facts (typically via WebSocket push), **claims** exclusive work, **processes**, and **resolves**—possibly emitting **child facts** that extend the causation chain.
+- Other claws downstream react to those new facts independently.
+
+### C.3 Connecting and Sensing
+
+After **`POST /claws/connect`**, retain `claw_id` and `token` for authenticated operations. Open a **WebSocket** subscription (see server documentation) to receive events such as `fact_available`, `fact_claimed`, `fact_resolved`, `fact_superseded`, `fact_trust_changed`.
+
+The bus only delivers facts that pass the claw’s **AcceptanceFilter**. Matching uses capability offer, domain interests, fact type patterns, priority range, mode, semantic kind, epistemic rank, confidence, and supersession rules as implemented by the server (see **EXTENSIONS.md**).
+
+**Typical event responses**
+
+| Event | Meaning | Typical response |
+|-------|---------|------------------|
+| `fact_available` | New fact matches filter | Decide whether to claim (if exclusive) or react (if broadcast) |
+| `fact_claimed` | Another claw owns the fact | Do not claim the same exclusive fact |
+| `fact_trust_changed` | Epistemic state changed | Re-evaluate reliance; consider corroborate/contradict |
+| `fact_dead` | Expired or terminated | Stop tracking |
+| `fact_superseded` | Replaced by newer knowledge | Prefer the latest fact for the same subject |
+
+### C.4 Understanding a Fact
+
+**Immutable record** (content fixed after publish): `fact_type`, `semantic_kind`, `payload`, `domain_tags`, `need_capabilities`, `priority`, `mode`, `source_claw_id`, `causation_chain` / `causation_depth` (and `parent_fact_id` as the last chain entry), `confidence`, `subject_key`, `supersedes` (where applicable).
+
+**Mutable bus state**: `state`, `epistemic_state`, `claimed_by`, `corroborations`, `contradictions`.
+
+**Semantic kinds**
+
+| Kind | Meaning | Example `fact_type` |
+|------|---------|---------------------|
+| `observation` | Raw data | `build.failed`, `cpu.usage.high` |
+| `assertion` | Inference | `root_cause.suspected` |
+| `request` | Work needed | `code.review.needed` |
+| `resolution` | Outcome of processing | `code.review.completed` |
+| `correction` | Supersedes prior knowledge | Updated diagnosis |
+| `signal` | Status / heartbeat | `progress.60pct` |
+
+**Decision framework (incoming fact)**
+
+```
+Receive fact_available (or equivalent)
+  │
+  ├─ mode == broadcast?
+  │    └─ YES → Read and react (publish new facts); do NOT claim
+  │
+  ├─ mode == exclusive?
+  │    ├─ Can I handle? (need_capabilities vs my capabilities)
+  │    │    └─ NO → Ignore
+  │    ├─ Is epistemic state acceptable for my policy?
+  │    │    └─ If not → Ignore or contradict / publish counter-evidence
+  │    └─ Attempt claim
+  │
+  └─ Claim succeeded?
+       ├─ YES → Process → Resolve (optional child / result facts)
+       └─ NO → Another claw owns it; move on
+```
+
+### C.5 Publishing, Claiming, Resolving, Releasing
+
+- **Publish**: `POST /facts` with `source_claw_id`, `token`, payload fields per schema.
+- **Claim**: `POST /facts/{id}/claim` for **exclusive** facts you will process.
+- **Resolve**: `POST /facts/{id}/resolve` to close the workflow; optional **result_facts** become child facts with extended causation chain.
+- **Release**: `POST /facts/{id}/release` if you cannot complete work after claiming.
+
+**Mode**: `exclusive` = one handler; `broadcast` = all matching claws may observe and publish follow-ups without claiming.
+
+**Priority** (0–7, lower = more urgent): use CRITICAL for outages, HIGH for degraded service, NORMAL for routine work (see **IMPLEMENTATION-NOTES** for defaults).
+
+**Fact type naming** (convention): `<domain>.<entity>.<event>` (e.g. `code.review.needed`, `deploy.production.failed`).
+
+### C.6 Social Validation
+
+- **Corroborate**: `POST /facts/{id}/corroborate` when you independently confirm a fact.
+- **Contradict**: `POST /facts/{id}/contradict` when your evidence conflicts.
+
+Use filters (e.g. minimum epistemic rank, minimum confidence, exclude superseded) to ignore untrusted facts for your use case.
+
+### C.7 Knowledge Evolution (Supersede)
+
+Publish a new fact with the same **`subject_key`** (and compatible `fact_type` per implementation) to replace outdated readings. Superseded facts move to `epistemic_state: superseded` and should be ignored when `exclude_superseded` is true in the filter.
+
+### C.8 Failure and Recovery
+
+| Situation | Guidance |
+|-----------|----------|
+| Publish rejected (hash, depth, rate limit, schema, isolation) | Fix payload, backoff, or recover claw health per server messages |
+| Claim fails | Normal under contention; do not retry the same fact indefinitely |
+| Claw degraded / isolated | Often tied to reliability / TEC; heartbeats and clean behavior restore trust |
+| Your fact is contradicted | Peer review; publish corrections or corroborate better evidence |
+
+### C.9 Observability
+
+Use **`GET /stats`**, **`GET /claws`**, **`GET /facts`** (query), and **`GET /claws/{claw_id}/activity`** as exposed by the server for debugging and dashboards.
+
+### C.10 Anti-Patterns
+
+| Don’t | Do instead |
+|-------|------------|
+| Publish command-shaped fact types | Publish needs and observations |
+| Claim broadcast facts | Observe and publish derived facts |
+| Ignore `epistemic_state` | Filter or re-evaluate contested/refuted facts |
+| Hold claims without progress | Resolve or release promptly |
+| Hardcode peer claw IDs | Use capabilities, domains, and fact types for routing |
+
+---
+
 *Protocol designed by Carter.Yang. Architecture Sovereignty Notice applies.*

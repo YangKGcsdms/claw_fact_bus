@@ -477,6 +477,248 @@
             margin-top: 0.5rem;
             max-height: 200px;
         }
+
+        /* Tabs */
+        .tab-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-bottom: 1.25rem;
+            border-bottom: 1px solid #2a2a3e;
+            padding-bottom: 0.5rem;
+        }
+        .tab-btn {
+            background: transparent;
+            border: 1px solid #2a2a3e;
+            color: #888;
+            padding: 0.45rem 0.85rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .tab-btn:hover { border-color: #00d4aa; color: #00d4aa; }
+        .tab-btn.active {
+            background: rgba(0, 212, 170, 0.15);
+            border-color: #00d4aa;
+            color: #00d4aa;
+        }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Distribution bars */
+        .dist-section {
+            margin-bottom: 1.25rem;
+        }
+        .dist-section h4 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #888;
+            margin-bottom: 0.35rem;
+            letter-spacing: 0.05em;
+        }
+        .dist-bar {
+            display: flex;
+            height: 22px;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #12121a;
+            border: 1px solid #2a2a3e;
+        }
+        .dist-seg {
+            min-width: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            color: #fff;
+            text-shadow: 0 1px 2px #000;
+        }
+        .dist-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            color: #888;
+        }
+        .dist-legend span { display: inline-flex; align-items: center; gap: 0.25rem; }
+        .dist-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+        .claw-state-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-top: 0.5rem;
+        }
+        .mini-badge {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.45rem;
+            border-radius: 4px;
+            background: #2a2a3e;
+        }
+
+        /* Kanban */
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(140px, 1fr));
+            gap: 0.75rem;
+            min-height: 200px;
+        }
+        @media (max-width: 1100px) {
+            .kanban-board { grid-template-columns: repeat(2, 1fr); }
+        }
+        .kanban-col {
+            background: #12121a;
+            border: 1px solid #2a2a3e;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            max-height: 420px;
+        }
+        .kanban-col h3 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #888;
+            padding: 0.5rem 0.65rem;
+            border-bottom: 1px solid #2a2a3e;
+        }
+        .kanban-col-inner {
+            overflow-y: auto;
+            padding: 0.4rem;
+            flex: 1;
+        }
+        .kanban-card {
+            background: #1a1a2e;
+            border: 1px solid #2a2a3e;
+            border-radius: 6px;
+            padding: 0.45rem 0.5rem;
+            margin-bottom: 0.4rem;
+            cursor: pointer;
+            font-size: 0.72rem;
+        }
+        .kanban-card:hover { border-color: #00d4aa; }
+        .kanban-card .kc-type { color: #a5b4fc; word-break: break-all; }
+        .kanban-card .kc-meta { color: #666; margin-top: 0.25rem; }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.35rem;
+            margin-bottom: 0.75rem;
+        }
+        .view-toggle button {
+            background: #2a2a3e;
+            border: 1px solid #3a3a4e;
+            color: #ccc;
+            padding: 0.35rem 0.65rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .view-toggle button.active { background: #00d4aa; color: #0a0a0f; border-color: #00d4aa; }
+
+        /* Event stream */
+        .event-stream-wrap {
+            max-height: 280px;
+            overflow-y: auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.72rem;
+            background: #0a0a12;
+            border: 1px solid #2a2a3e;
+            border-radius: 6px;
+            padding: 0.5rem;
+        }
+        .event-line {
+            padding: 0.2rem 0;
+            border-bottom: 1px solid #1a1a24;
+        }
+        .event-line.ev-fact_available { color: #60a5fa; }
+        .event-line.ev-fact_claimed { color: #f59e0b; }
+        .event-line.ev-fact_resolved { color: #00d4aa; }
+        .event-line.ev-fact_dead { color: #ef4444; }
+        .event-line.ev-fact_expired { color: #f97316; }
+        .event-line.ev-fact_superseded { color: #a78bfa; }
+        .event-line.ev-fact_trust_changed { color: #22d3ee; }
+        .event-line.ev-claw_state_changed { color: #f472b6; }
+        .event-line.ev-default { color: #9ca3af; }
+
+        .heartbeat-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .hb-fresh { background: #22c55e; }
+        .hb-warn { background: #eab308; }
+        .hb-stale { background: #ef4444; }
+
+        .tec-gauge-wrap {
+            position: relative;
+            height: 8px;
+            background: #2a2a3e;
+            border-radius: 4px;
+            margin: 0.35rem 0;
+        }
+        .tec-gauge-fill {
+            height: 100%;
+            border-radius: 4px;
+            max-width: 100%;
+        }
+        .tec-mark { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,0.25); }
+        .tag-row { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.35rem; }
+        .tag-pill {
+            font-size: 0.65rem;
+            padding: 0.15rem 0.4rem;
+            background: #2a2a3e;
+            border-radius: 4px;
+            color: #c4b5fd;
+        }
+
+        .fact-state.matched { background: rgba(139, 92, 246, 0.1); color: #a78bfa; }
+        .fact-state.processing { background: rgba(236, 72, 153, 0.1); color: #f472b6; }
+        .fact-state.created { background: rgba(107, 114, 128, 0.15); color: #9ca3af; }
+
+        .confidence-bar {
+            width: 48px;
+            height: 4px;
+            background: #2a2a3e;
+            border-radius: 2px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .confidence-fill { height: 100%; background: linear-gradient(90deg, #ef4444, #22c55e); border-radius: 2px; }
+
+        .tree-node {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.72rem;
+            line-height: 1.5;
+            margin-left: 0;
+            white-space: pre-wrap;
+        }
+        .tree-node .tn-line { margin: 0.15rem 0; }
+        .tree-broken { color: #ef4444; }
+
+        .section-hint {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 0.75rem;
+        }
+
+        .collapse-toggle {
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.75rem;
+            margin-left: auto;
+        }
+        .section-header-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .section.collapsed .section-body { display: none; }
     </style>
 </head>
 <body>
@@ -484,6 +726,8 @@
         <h1 data-i18n="title">Claw Fact Bus Dashboard</h1>
         <div class="header-actions">
             <span class="ws-status" id="ws-status">● <span data-i18n="live">Live</span></span>
+            <span id="ws-extra" class="dim" style="font-size:0.75rem"></span>
+            <span class="dim" style="font-size:0.7rem" data-i18n="keyboardHint">R refresh · 1–6 tabs</span>
             <div class="auto-refresh">
                 <input type="checkbox" id="auto-refresh" checked>
                 <label for="auto-refresh" data-i18n="autoRefresh">Auto-refresh (5s)</label>
@@ -498,6 +742,17 @@
     </div>
     
     <div class="container">
+        <div class="tab-bar" role="tablist">
+            <button type="button" class="tab-btn active" data-tab="overview" data-i18n="tabOverview">Overview</button>
+            <button type="button" class="tab-btn" data-tab="kanban" data-i18n="tabKanban">Kanban</button>
+            <button type="button" class="tab-btn" data-tab="claws" data-i18n="tabClaws">Claws</button>
+            <button type="button" class="tab-btn" data-tab="facts" data-i18n="tabFacts">Facts</button>
+            <button type="button" class="tab-btn" data-tab="events" data-i18n="tabEvents">Events</button>
+            <button type="button" class="tab-btn" data-tab="admin" data-i18n="tabAdmin">Admin</button>
+        </div>
+
+        <!-- Overview -->
+        <div class="tab-panel active" id="tab-overview" role="tabpanel">
         <div class="metrics-grid" id="metrics">
             <div class="metric-card">
                 <h3 data-i18n="totalFacts">Total Facts</h3>
@@ -519,8 +774,180 @@
                 <h3 data-i18n="resolutionRate">Resolution Rate</h3>
                 <div class="metric-value success" id="metric-resolution-rate">-%</div>
             </div>
+            <div class="metric-card">
+                <h3 data-i18n="pendingFacts">Pending Facts</h3>
+                <div class="metric-value" id="metric-pending-facts">-</div>
+            </div>
+            <div class="metric-card">
+                <h3 data-i18n="schemasCount">Schemas</h3>
+                <div class="metric-value" id="metric-schemas-count">-</div>
+            </div>
+            <div class="metric-card">
+                <h3 data-i18n="protocolVersion">Protocol</h3>
+                <div class="metric-value" style="font-size:1.1rem" id="metric-protocol-version">-</div>
+            </div>
         </div>
 
+        <div class="section" id="dist-distributions">
+            <div class="section-header-row">
+                <h2 style="margin:0">📊 <span data-i18n="sectionDistributions">Distributions</span></h2>
+            </div>
+            <div class="dist-section">
+                <h4 data-i18n="distFactStates">Fact workflow states</h4>
+                <div class="dist-bar" id="dist-fact-states"></div>
+                <div class="dist-legend" id="dist-fact-legend"></div>
+            </div>
+            <div class="dist-section">
+                <h4 data-i18n="distEpistemic">Epistemic states</h4>
+                <div class="dist-bar" id="dist-epistemic"></div>
+                <div class="dist-legend" id="dist-epistemic-legend"></div>
+            </div>
+            <div class="dist-section">
+                <h4 data-i18n="distClawStates">Claw health</h4>
+                <div class="claw-state-badges" id="dist-claw-badges"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📝 <span data-i18n="sectionSchemas">Registered Schemas</span></h2>
+            <div class="section-body">
+            <table id="schemas-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="thFactType">Fact Type</th>
+                        <th data-i18n="thVersions">Versions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="2" class="empty-state" data-i18n="loading">Loading...</td></tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+        </div>
+        <!-- /Overview -->
+
+        <!-- Kanban -->
+        <div class="tab-panel" id="tab-kanban" role="tabpanel">
+        <div class="section">
+            <h2>📋 <span data-i18n="sectionKanban">Fact lifecycle</span></h2>
+            <p class="section-hint" data-i18n="kanbanHint">Columns show published → matched → claimed → resolved → dead (up to 20 each).</p>
+            <div class="kanban-board" id="kanban-board">
+                <div class="kanban-col" data-state="published"><h3 data-i18n="filterPublished">Published</h3><div class="kanban-col-inner" id="kb-published"></div></div>
+                <div class="kanban-col" data-state="matched"><h3 data-i18n="filterMatched">Matched</h3><div class="kanban-col-inner" id="kb-matched"></div></div>
+                <div class="kanban-col" data-state="claimed"><h3 data-i18n="filterClaimed">Claimed</h3><div class="kanban-col-inner" id="kb-claimed"></div></div>
+                <div class="kanban-col" data-state="resolved"><h3 data-i18n="filterResolved">Resolved</h3><div class="kanban-col-inner" id="kb-resolved"></div></div>
+                <div class="kanban-col" data-state="dead"><h3 data-i18n="filterDead">Dead</h3><div class="kanban-col-inner" id="kb-dead"></div></div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Claws -->
+        <div class="tab-panel" id="tab-claws" role="tabpanel">
+        <div class="section">
+            <h2>🔌 <span data-i18n="sectionClaws">Connected Claws</span></h2>
+            <div class="section-body">
+            <table id="claws-table">
+                <thead>
+                    <tr>
+                        <th style="width:2.5rem" data-i18n="thExpand"> </th>
+                        <th>ID</th>
+                        <th data-i18n="thName">Name</th>
+                        <th data-i18n="thState">State</th>
+                        <th data-i18n="thHeartbeat">Heartbeat</th>
+                        <th data-i18n="thUptime">Uptime</th>
+                        <th data-i18n="thClaims">Claims</th>
+                        <th data-i18n="thTec">TEC</th>
+                        <th data-i18n="thCapabilities">Capabilities</th>
+                        <th data-i18n="thReliability">Reliability</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="10" class="empty-state" data-i18n="loading">Loading...</td></tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+        </div>
+
+        <!-- Facts -->
+        <div class="tab-panel" id="tab-facts" role="tabpanel">
+        <div class="section">
+            <h2>📦 <span data-i18n="sectionFacts">Recent Facts</span></h2>
+            <div class="view-toggle">
+                <button type="button" id="facts-view-table" class="active" onclick="setFactsViewMode('table')" data-i18n="viewTable">Table</button>
+                <button type="button" id="facts-view-kanban" onclick="setFactsViewMode('kanban')" data-i18n="viewKanban">Kanban</button>
+            </div>
+            <div class="form-row" style="margin-bottom:0.75rem">
+                <label data-i18n="labelFactTypeSearch">Fact type</label>
+                <input type="text" class="input-text" id="fact-type-filter" placeholder="" data-i18n-placeholder="phFactType" style="min-width:160px">
+                <label data-i18n="labelSourceClaw">Source claw</label>
+                <select class="input-text" id="source-claw-filter" style="min-width:140px">
+                    <option value="" data-i18n="filterAllSources">All sources</option>
+                </select>
+            </div>
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="filterFacts('all')" data-i18n="filterAll">All</button>
+                <button class="filter-btn" onclick="filterFacts('published')" data-i18n="filterPublished">Published</button>
+                <button class="filter-btn" onclick="filterFacts('matched')" data-i18n="filterMatched">Matched</button>
+                <button class="filter-btn" onclick="filterFacts('claimed')" data-i18n="filterClaimed">Claimed</button>
+                <button class="filter-btn" onclick="filterFacts('processing')" data-i18n="filterProcessing">Processing</button>
+                <button class="filter-btn" onclick="filterFacts('resolved')" data-i18n="filterResolved">Resolved</button>
+                <button class="filter-btn" onclick="filterFacts('dead')" data-i18n="filterDead">Dead</button>
+            </div>
+            <div id="facts-table-wrap" class="section-body">
+            <table id="facts-table">
+                <thead>
+                    <tr>
+                        <th style="width:2.5rem" data-i18n="thExpand"> </th>
+                        <th data-i18n="thPriority">Priority</th>
+                        <th>ID</th>
+                        <th data-i18n="thChain">Chain</th>
+                        <th data-i18n="thType">Type</th>
+                        <th data-i18n="thState">State</th>
+                        <th data-i18n="thEpistemic">Epistemic</th>
+                        <th data-i18n="thSemanticKind">Kind</th>
+                        <th data-i18n="thConfidence">Conf.</th>
+                        <th data-i18n="thTrust">Trust</th>
+                        <th data-i18n="thSuperseded">Super.</th>
+                        <th data-i18n="thTtl">TTL</th>
+                        <th data-i18n="thSource">Source</th>
+                        <th data-i18n="thClaimedBy">Claimed By</th>
+                        <th data-i18n="thAge">Age</th>
+                        <th data-i18n="thDomains">Domains</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="16" class="empty-state" data-i18n="loading">Loading...</td></tr>
+                </tbody>
+            </table>
+            </div>
+            <div id="facts-kanban-wrap" style="display:none" class="section-body">
+                <div class="kanban-board" id="facts-inline-kanban">
+                    <div class="kanban-col"><h3 data-i18n="filterPublished">Published</h3><div class="kanban-col-inner" id="fkb-published"></div></div>
+                    <div class="kanban-col"><h3 data-i18n="filterMatched">Matched</h3><div class="kanban-col-inner" id="fkb-matched"></div></div>
+                    <div class="kanban-col"><h3 data-i18n="filterClaimed">Claimed</h3><div class="kanban-col-inner" id="fkb-claimed"></div></div>
+                    <div class="kanban-col"><h3 data-i18n="filterResolved">Resolved</h3><div class="kanban-col-inner" id="fkb-resolved"></div></div>
+                    <div class="kanban-col"><h3 data-i18n="filterDead">Dead</h3><div class="kanban-col-inner" id="fkb-dead"></div></div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Events -->
+        <div class="tab-panel" id="tab-events" role="tabpanel">
+        <div class="section">
+            <div class="section-header-row">
+                <h2 style="margin:0">📡 <span data-i18n="sectionEvents">Live event stream</span></h2>
+                <span id="event-rate" class="dim" style="font-size:0.8rem"></span>
+            </div>
+            <p class="section-hint" data-i18n="eventsHint">Last 50 WebSocket events. Full refresh still runs on each event.</p>
+            <div class="event-stream-wrap" id="event-stream"></div>
+        </div>
+        </div>
+
+        <!-- Admin -->
+        <div class="tab-panel" id="tab-admin" role="tabpanel">
         <div class="section control-panel">
             <h2>🎛️ <span data-i18n="sectionControl">Bus Control Panel</span></h2>
             <p class="admin-msg" data-i18n="controlHint">Dangerous operations require FACT_BUS_ADMIN_KEY on the server; enter the same key here.</p>
@@ -572,71 +999,8 @@
                 </div>
             </div>
         </div>
-        
-        <div class="section">
-            <h2>🔌 <span data-i18n="sectionClaws">Connected Claws</span></h2>
-            <table id="claws-table">
-                <thead>
-                    <tr>
-                        <th style="width:2.5rem" data-i18n="thExpand"> </th>
-                        <th>ID</th>
-                        <th data-i18n="thName">Name</th>
-                        <th data-i18n="thState">State</th>
-                        <th data-i18n="thCapabilities">Capabilities</th>
-                        <th data-i18n="thReliability">Reliability</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td colspan="6" class="empty-state" data-i18n="loading">Loading...</td></tr>
-                </tbody>
-            </table>
         </div>
-        
-        <div class="section">
-            <h2>📦 <span data-i18n="sectionFacts">Recent Facts</span></h2>
-            <div class="filter-bar">
-                <button class="filter-btn active" onclick="filterFacts('all')" data-i18n="filterAll">All</button>
-                <button class="filter-btn" onclick="filterFacts('published')" data-i18n="filterPublished">Published</button>
-                <button class="filter-btn" onclick="filterFacts('claimed')" data-i18n="filterClaimed">Claimed</button>
-                <button class="filter-btn" onclick="filterFacts('resolved')" data-i18n="filterResolved">Resolved</button>
-                <button class="filter-btn" onclick="filterFacts('dead')" data-i18n="filterDead">Dead</button>
-            </div>
-            <table id="facts-table">
-                <thead>
-                    <tr>
-                        <th style="width:2.5rem" data-i18n="thExpand"> </th>
-                        <th data-i18n="thPriority">Priority</th>
-                        <th>ID</th>
-                        <th data-i18n="thType">Type</th>
-                        <th data-i18n="thState">State</th>
-                        <th data-i18n="thEpistemic">Epistemic</th>
-                        <th data-i18n="thSemanticKind">Kind</th>
-                        <th data-i18n="thSource">Source</th>
-                        <th data-i18n="thClaimedBy">Claimed By</th>
-                        <th data-i18n="thAge">Age</th>
-                        <th data-i18n="thDomains">Domains</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td colspan="11" class="empty-state" data-i18n="loading">Loading...</td></tr>
-                </tbody>
-            </table>
-        </div>
-        
-        <div class="section">
-            <h2>📝 <span data-i18n="sectionSchemas">Registered Schemas</span></h2>
-            <table id="schemas-table">
-                <thead>
-                    <tr>
-                        <th data-i18n="thFactType">Fact Type</th>
-                        <th data-i18n="thVersions">Versions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td colspan="2" class="empty-state" data-i18n="loading">Loading...</td></tr>
-                </tbody>
-            </table>
-        </div>
+        <!-- /tab-admin -->
     </div>
 
     <div class="modal-overlay" id="fact-modal" role="dialog" aria-modal="true">
@@ -657,6 +1021,32 @@
         let refreshInterval;
         let expandedFactId = null;
         let expandedClawId = null;
+        let factsViewMode = 'table';
+        let __factsById = new Map();
+        let __lastMetrics = null;
+        let wsReconnectCount = 0;
+        let wsLastConnectTime = 0;
+        const eventStreamBuffer = [];
+        let eventTimestamps = [];
+        const KANBAN_STATES = ['published', 'matched', 'claimed', 'resolved', 'dead'];
+        let lastFactsList = [];
+        const FACT_STATE_COLORS = {
+            created: '#6b7280',
+            published: '#3b82f6',
+            matched: '#8b5cf6',
+            claimed: '#f59e0b',
+            processing: '#ec4899',
+            resolved: '#00d4aa',
+            dead: '#ef4444',
+        };
+        const EPISTEMIC_COLORS = {
+            asserted: '#9ca3af',
+            corroborated: '#22c55e',
+            consensus: '#00d4aa',
+            contested: '#f59e0b',
+            refuted: '#ef4444',
+            superseded: '#a78bfa',
+        };
 
         // =====================================================================
         // i18n
@@ -739,6 +1129,55 @@
                 confirmCleanup: 'Delete matching facts from the bus? This cannot be undone.',
                 confirmDeleteFact: 'Delete fact {0}?',
                 confirmRepair: 'Trim causation chains to existing facts?',
+                tabOverview: 'Overview',
+                tabKanban: 'Kanban',
+                tabClaws: 'Claws',
+                tabFacts: 'Facts',
+                tabEvents: 'Events',
+                tabAdmin: 'Admin',
+                pendingFacts: 'Pending Facts',
+                schemasCount: 'Schemas',
+                protocolVersion: 'Protocol',
+                sectionDistributions: 'Distributions',
+                distFactStates: 'Fact workflow states',
+                distEpistemic: 'Epistemic states',
+                distClawStates: 'Claw health',
+                sectionKanban: 'Fact lifecycle',
+                kanbanHint: 'Columns show published → matched → claimed → resolved → dead (up to 20 each).',
+                sectionEvents: 'Live event stream',
+                eventsHint: 'Last 50 WebSocket events. Full refresh still runs on each event.',
+                thHeartbeat: 'HB',
+                thUptime: 'Uptime',
+                thClaims: 'Claims',
+                thTec: 'TEC',
+                thChain: 'Chain',
+                thConfidence: 'Conf.',
+                thTrust: 'Trust',
+                thSuperseded: 'Super.',
+                thTtl: 'TTL',
+                filterMatched: 'Matched',
+                filterProcessing: 'Processing',
+                filterCreated: 'Created',
+                labelFactTypeSearch: 'Fact type',
+                labelSourceClaw: 'Source',
+                filterAllSources: 'All sources',
+                phFactType: 'glob or substring',
+                viewTable: 'Table',
+                viewKanban: 'Kanban',
+                btnViewChainTree: 'View causation tree',
+                labelCausationTree: 'Causation tree',
+                labelClawActivity: 'Activity',
+                labelFilterTags: 'Filter (tags)',
+                brokenChain: 'Broken',
+                okChain: 'OK',
+                treeStats: 'Depth stats (loaded facts)',
+                maxDepth: 'Max depth',
+                avgDepth: 'Avg depth',
+                keyboardHint: 'R refresh · 1–6 tabs',
+                wsReconnects: 'Reconnects: {0}',
+                eventsPerMin: '{0} ev/min',
+                ttlExpired: 'expired',
+                activityEmpty: 'No activity yet',
             },
             zh: {
                 title: 'Claw 事实总线 监控面板',
@@ -817,6 +1256,55 @@
                 confirmCleanup: '确定从总线删除匹配的事实？不可恢复。',
                 confirmDeleteFact: '删除事实 {0}？',
                 confirmRepair: '将因果链裁剪为仅含存在的事实？',
+                tabOverview: '总览',
+                tabKanban: '看板',
+                tabClaws: 'Claw',
+                tabFacts: '事实',
+                tabEvents: '事件',
+                tabAdmin: '管理',
+                pendingFacts: '待处理',
+                schemasCount: 'Schema 数',
+                protocolVersion: '协议',
+                sectionDistributions: '分布',
+                distFactStates: '工作流状态',
+                distEpistemic: '认知状态',
+                distClawStates: 'Claw 健康',
+                sectionKanban: '事实生命周期',
+                kanbanHint: '列为 已发布 → 已匹配 → 已认领 → 已完成 → 死信（每列最多 20 条）。',
+                sectionEvents: '实时事件流',
+                eventsHint: '最近 50 条 WebSocket 事件；每条仍会触发全量刷新。',
+                thHeartbeat: '心跳',
+                thUptime: '在线',
+                thClaims: '认领',
+                thTec: 'TEC',
+                thChain: '链',
+                thConfidence: '置信',
+                thTrust: '信任',
+                thSuperseded: '替代',
+                thTtl: 'TTL',
+                filterMatched: '已匹配',
+                filterProcessing: '处理中',
+                filterCreated: '已创建',
+                labelFactTypeSearch: '事实类型',
+                labelSourceClaw: '来源',
+                filterAllSources: '全部来源',
+                phFactType: '子串或通配',
+                viewTable: '表格',
+                viewKanban: '看板',
+                btnViewChainTree: '查看因果树',
+                labelCausationTree: '因果树',
+                labelClawActivity: '活动',
+                labelFilterTags: '过滤（标签）',
+                brokenChain: '断链',
+                okChain: '正常',
+                treeStats: '深度（已加载事实）',
+                maxDepth: '最大深度',
+                avgDepth: '平均深度',
+                keyboardHint: 'R 刷新 · 1–6 切换标签',
+                wsReconnects: '重连: {0}',
+                eventsPerMin: '{0} 条/分',
+                ttlExpired: '已过期',
+                activityEmpty: '暂无活动',
             },
         };
 
@@ -873,6 +1361,195 @@
             }
         }
 
+        function shortId(id) {
+            if (!id) return '';
+            return id.length > 14 ? id.slice(0, 6) + '…' + id.slice(-4) : id;
+        }
+
+        function ttlRemaining(f) {
+            const end = (f.created_at || 0) + (f.ttl_seconds || 0);
+            const left = Math.floor(end - Date.now() / 1000);
+            if (left <= 0) return t('ttlExpired');
+            if (left < 60) return left + 's';
+            if (left < 3600) return Math.floor(left / 60) + 'm';
+            return Math.floor(left / 3600) + 'h';
+        }
+
+        function heartbeatClass(ts) {
+            if (!ts) return 'hb-stale';
+            const age = Date.now() / 1000 - ts;
+            if (age < 30) return 'hb-fresh';
+            if (age < 60) return 'hb-warn';
+            return 'hb-stale';
+        }
+
+        function formatUptime(connectedAt) {
+            if (connectedAt == null) return '—';
+            const s = Math.floor(Date.now() / 1000 - connectedAt);
+            if (s < 60) return s + 's';
+            if (s < 3600) return Math.floor(s / 60) + 'm';
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            return h + 'h ' + m + 'm';
+        }
+
+        function tecColor(tec) {
+            const n = tec | 0;
+            if (n < 64) return '#22c55e';
+            if (n < 128) return '#eab308';
+            if (n < 256) return '#f97316';
+            return '#ef4444';
+        }
+
+        function countClaimsForClaw(clawId) {
+            let n = 0;
+            __factsById.forEach(f => {
+                if ((f.state === 'claimed' || f.state === 'processing') && f.claimed_by === clawId) n++;
+            });
+            return n;
+        }
+
+        function isChainBrokenFact(f) {
+            const chain = f.causation_chain || [];
+            for (let i = 0; i < chain.length; i++) {
+                if (!__factsById.has(chain[i])) return true;
+            }
+            return false;
+        }
+
+        function buildChildrenIndex() {
+            const children = new Map();
+            __factsById.forEach(f => {
+                const p = f.parent_fact_id || '';
+                if (!p) return;
+                if (!children.has(p)) children.set(p, []);
+                children.get(p).push(f);
+            });
+            return children;
+        }
+
+        function findRootFactId(factId) {
+            let id = factId;
+            const seen = new Set();
+            while (id && !seen.has(id)) {
+                seen.add(id);
+                const f = __factsById.get(id);
+                if (!f) break;
+                const p = f.parent_fact_id || '';
+                if (!p) return id;
+                id = p;
+            }
+            return id || factId;
+        }
+
+        function treeDepthStatsFromRoot(rootId) {
+            const ch = buildChildrenIndex();
+            let maxD = 0;
+            let leaves = 0;
+            let sumDepth = 0;
+            function walk(nid, d) {
+                maxD = Math.max(maxD, d);
+                const kids = ch.get(nid) || [];
+                if (kids.length === 0) {
+                    leaves++;
+                    sumDepth += d;
+                } else kids.forEach(c => walk(c.fact_id, d + 1));
+            }
+            walk(rootId, 0);
+            const avg = leaves ? (sumDepth / leaves).toFixed(1) : '0';
+            return { maxD, avg };
+        }
+
+        function renderTreeNodeHtml(factId) {
+            const f = __factsById.get(factId);
+            if (!f) {
+                return '<li class="tree-broken">' + escapeHtml(factId) + ' (missing)</li>';
+            }
+            const kids = (buildChildrenIndex().get(factId) || []).slice().sort((a, b) =>
+                (a.created_at || 0) - (b.created_at || 0));
+            let btn = '<button type="button" class="chain-link" onclick="openFactModal(\'' + f.fact_id + '\')">' +
+                escapeHtml(shortId(f.fact_id)) + ' <span class="dim">' + escapeHtml(f.fact_type || '') + '</span> ' +
+                '<span class="dim">' + escapeHtml(f.state || '') + '</span> · ' +
+                '<span class="dim">' + escapeHtml(f.epistemic_state || '') + '</span></button>';
+            if (isChainBrokenFact(f)) btn += ' <span class="tree-broken" title="' + escapeHtml(t('brokenChain')) + '">⚠</span>';
+            if (kids.length) {
+                return '<li style="margin:0.2rem 0">' + btn + '<ul style="margin:0.25rem 0 0 0.75rem;padding:0;list-style:none;border-left:1px solid #2a2a3e">' +
+                    kids.map(c => renderTreeNodeHtml(c.fact_id)).join('') + '</ul></li>';
+            }
+            return '<li style="margin:0.2rem 0">' + btn + '</li>';
+        }
+
+        function buildCausationTreeBlock(factId) {
+            const root = findRootFactId(factId);
+            const stats = treeDepthStatsFromRoot(root);
+            const treeHtml = '<ul style="margin:0;padding:0;list-style:none">' + renderTreeNodeHtml(root) + '</ul>';
+            return '<div class="detail-block" style="margin-bottom:0.75rem">' +
+                '<strong>' + escapeHtml(t('labelCausationTree')) + '</strong>' +
+                '<p class="dim" style="font-size:0.7rem;margin:0.25rem 0">' +
+                escapeHtml(t('treeStats')) + ': ' + escapeHtml(t('maxDepth')) + ' ' + stats.maxD + ', ' +
+                escapeHtml(t('avgDepth')) + ' ' + stats.avg + '</p>' +
+                '<div class="tree-node">' + treeHtml + '</div></div>';
+        }
+
+        function renderDistributions(data) {
+            if (!data || !data.facts) return;
+            const byState = data.facts.by_state || {};
+            const stateOrder = ['created', 'published', 'matched', 'claimed', 'processing', 'resolved', 'dead'];
+            const totalFacts = Math.max(data.facts.total || 0, 1);
+            const factBar = document.getElementById('dist-fact-states');
+            const factLeg = document.getElementById('dist-fact-legend');
+            if (factBar) {
+                let html = '';
+                stateOrder.forEach(st => {
+                    const c = byState[st] || 0;
+                    if (!c) return;
+                    const pct = Math.max(100 * c / totalFacts, c > 0 ? 0.5 : 0);
+                    html += '<div class="dist-seg" style="width:' + pct + '%;background:' + (FACT_STATE_COLORS[st] || '#555') + '">' +
+                        (c > totalFacts * 0.08 ? c : '') + '</div>';
+                });
+                factBar.innerHTML = html || '<div class="dist-seg" style="width:100%;background:#333">0</div>';
+            }
+            if (factLeg) {
+                factLeg.innerHTML = stateOrder.map(st => {
+                    const c = byState[st] || 0;
+                    if (!c) return '';
+                    return '<span><span class="dist-dot" style="background:' + (FACT_STATE_COLORS[st] || '#555') + '"></span>' +
+                        st + ': ' + c + '</span>';
+                }).filter(Boolean).join('');
+            }
+            const byEpi = data.facts.by_epistemic || {};
+            const epiOrder = ['asserted', 'corroborated', 'consensus', 'contested', 'refuted', 'superseded'];
+            const epiBar = document.getElementById('dist-epistemic');
+            const epiLeg = document.getElementById('dist-epistemic-legend');
+            if (epiBar) {
+                let html = '';
+                epiOrder.forEach(st => {
+                    const c = byEpi[st] || 0;
+                    if (!c) return;
+                    const pct = Math.max(100 * c / totalFacts, c > 0 ? 0.5 : 0);
+                    html += '<div class="dist-seg" style="width:' + pct + '%;background:' + (EPISTEMIC_COLORS[st] || '#555') + '">' +
+                        (c > totalFacts * 0.06 ? c : '') + '</div>';
+                });
+                epiBar.innerHTML = html || '<div class="dist-seg" style="width:100%;background:#333">0</div>';
+            }
+            if (epiLeg) {
+                epiLeg.innerHTML = epiOrder.map(st => {
+                    const c = byEpi[st] || 0;
+                    if (!c) return '';
+                    return '<span><span class="dist-dot" style="background:' + (EPISTEMIC_COLORS[st] || '#555') + '"></span>' +
+                        st + ': ' + c + '</span>';
+                }).filter(Boolean).join('');
+            }
+            const clawBy = (data.claws && data.claws.by_state) || {};
+            const badgeEl = document.getElementById('dist-claw-badges');
+            if (badgeEl) {
+                badgeEl.innerHTML = ['active', 'degraded', 'isolated', 'offline'].map(st => {
+                    const c = clawBy[st] || 0;
+                    return '<span class="mini-badge">' + escapeHtml(st) + ': ' + c + '</span>';
+                }).join('');
+            }
+        }
+
         function renderCausationChainButtons(chain) {
             if (!chain || !chain.length) {
                 return `<span class="dim">${escapeHtml(t('noCausation'))}</span>`;
@@ -890,6 +1567,7 @@
             const parentHtml = parent
                 ? `<button type="button" class="chain-link" onclick="openFactModal('${parent}')">${escapeHtml(parent)}</button>`
                 : '—';
+            const treeBlock = __factsById.size ? buildCausationTreeBlock(f.fact_id) : '';
             return `
                 <div class="detail-grid">
                     <div class="detail-block">
@@ -901,6 +1579,7 @@
                         <div>${renderCausationChainButtons(chain)}</div>
                     </div>
                 </div>
+                ${treeBlock}
                 <div class="detail-block" style="margin-bottom:0.75rem">
                     <strong>${escapeHtml(t('labelPayload'))}</strong>
                     <pre class="mono-block">${escapeHtml(formatJson(f.payload))}</pre>
@@ -912,7 +1591,25 @@
             `;
         }
 
-        function renderClawDetailCell(c) {
+        function renderFilterTags(filter) {
+            const caps = (filter.capability_offer || []).map(x => `<span class="tag-pill">${escapeHtml(x)}</span>`).join('');
+            const doms = (filter.domain_interests || []).map(x => `<span class="tag-pill" style="color:#86efac">${escapeHtml(x)}</span>`).join('');
+            const pats = (filter.fact_type_patterns || []).map(x => `<span class="tag-pill" style="color:#fcd34d">${escapeHtml(x)}</span>`).join('');
+            return `<div class="tag-row">${caps}${doms}${pats}</div>`;
+        }
+
+        function renderTecGauge(tec) {
+            const n = Math.min((tec | 0), 300);
+            const pct = (n / 300) * 100;
+            const col = tecColor(tec);
+            return `<div class="tec-gauge-wrap" title="TEC ${tec}">
+                <div class="tec-gauge-fill" style="width:${pct}%;background:${col}"></div>
+                <span class="tec-mark" style="left:42.67%"></span>
+                <span class="tec-mark" style="left:85.33%"></span>
+            </div><span class="dim" style="font-size:0.65rem">128 / 256</span>`;
+        }
+
+        function renderClawDetailCell(c, activityHtml) {
             const filter = c.acceptance_filter || {};
             const meta = {
                 description: c.description,
@@ -922,10 +1619,24 @@
                 connected_at: c.connected_at,
                 last_heartbeat: c.last_heartbeat,
             };
+            const act = activityHtml || `<span class="dim">${escapeHtml(t('activityEmpty'))}</span>`;
             return `
                 <div class="detail-block" style="margin-bottom:0.75rem">
                     <strong>${escapeHtml(t('labelClawMeta'))}</strong>
                     <pre class="mono-block">${escapeHtml(formatJson(meta))}</pre>
+                </div>
+                <div class="detail-block" style="margin-bottom:0.75rem">
+                    <strong>TEC / REC</strong>
+                    ${renderTecGauge(c.transmit_error_counter || 0)}
+                    <span class="dim">REC: ${escapeHtml(String(c.receive_error_counter || 0))}</span>
+                </div>
+                <div class="detail-block" style="margin-bottom:0.75rem">
+                    <strong>${escapeHtml(t('labelClawActivity'))}</strong>
+                    <pre class="mono-block" style="max-height:160px">${act}</pre>
+                </div>
+                <div class="detail-block" style="margin-bottom:0.75rem">
+                    <strong>${escapeHtml(t('labelFilterTags'))}</strong>
+                    ${renderFilterTags(filter)}
                 </div>
                 <div class="detail-block">
                     <strong>${escapeHtml(t('labelClawFilter'))}</strong>
@@ -1128,8 +1839,8 @@
         
         function getFactStateBadge(state) {
             const key = 'filter' + state.charAt(0).toUpperCase() + state.slice(1);
-            const label = I18N[currentLang][key] || state;
-            return `<span class="fact-state ${state}">${label}</span>`;
+            const label = (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || state;
+            return `<span class="fact-state ${state}">${escapeHtml(label)}</span>`;
         }
         
         function getPriorityIndicator(priority) {
@@ -1143,100 +1854,227 @@
             try {
                 const response = await fetch(`${API_BASE}/admin/metrics`);
                 const data = await response.json();
-                
+                __lastMetrics = data;
+
                 document.getElementById('metric-total-facts').textContent = data.facts.total;
                 document.getElementById('metric-connected-claws').textContent = data.claws.connected;
                 document.getElementById('metric-active-claims').textContent = data.computed.active_claims;
                 document.getElementById('metric-dead-letter').textContent = data.facts.by_state.dead || 0;
-                
+
                 const rate = Math.round(data.computed.resolution_rate * 100);
                 document.getElementById('metric-resolution-rate').textContent = `${rate}%`;
-                
+
+                const pendingEl = document.getElementById('metric-pending-facts');
+                if (pendingEl) pendingEl.textContent = data.computed.pending_facts != null ? data.computed.pending_facts : '—';
+
+                const sc = data.schemas || {};
+                const schemaCount = sc.fact_types != null ? sc.fact_types : (sc.total_schemas != null ? sc.total_schemas : '—');
+                const schEl = document.getElementById('metric-schemas-count');
+                if (schEl) schEl.textContent = schemaCount;
+
+                const pv = document.getElementById('metric-protocol-version');
+                if (pv) pv.textContent = data.protocol_version || '2.0.0';
+
+                renderDistributions(data);
+
                 return data;
             } catch (err) {
                 console.error('Failed to fetch metrics:', err);
             }
         }
+
+        async function fetchFactsIndex() {
+            try {
+                const response = await fetch(`${API_BASE}/facts?limit=1000`);
+                const facts = await response.json();
+                __factsById = new Map();
+                facts.forEach(f => __factsById.set(f.fact_id, f));
+                return facts;
+            } catch (e) {
+                console.error('fetchFactsIndex', e);
+                return [];
+            }
+        }
+
+        function renderKanbanCard(f) {
+            const pri = f.effective_priority != null ? f.effective_priority : f.priority;
+            const conf = Math.round((f.confidence != null ? f.confidence : 1) * 100);
+            return `<div class="kanban-card" onclick="openFactModal('${f.fact_id}')">
+                <div>${getPriorityIndicator(pri)} <code>${escapeHtml(shortId(f.fact_id))}</code></div>
+                <div class="kc-type">${escapeHtml(f.fact_type)}</div>
+                <div class="kc-meta">${escapeHtml(f.epistemic_state || '')} · ${conf}% · ${timeAgo(f.created_at)}</div>
+                <div class="kc-meta dim">${escapeHtml(f.source_claw_id || '')}</div>
+            </div>`;
+        }
+
+        async function fetchKanban() {
+            const states = ['published', 'matched', 'claimed', 'resolved', 'dead'];
+            try {
+                const results = await Promise.all(
+                    states.map(st => fetch(`${API_BASE}/facts?state=${st}&limit=20`).then(r => r.json()))
+                );
+                states.forEach((st, i) => {
+                    const el = document.getElementById('kb-' + st);
+                    if (el) {
+                        const arr = results[i] || [];
+                        el.innerHTML = arr.length ? arr.map(renderKanbanCard).join('') : '<span class="dim">—</span>';
+                    }
+                });
+                const fkbStates = ['published', 'matched', 'claimed', 'resolved', 'dead'];
+                const fkbMap = { published: 'fkb-published', matched: 'fkb-matched', claimed: 'fkb-claimed', resolved: 'fkb-resolved', dead: 'fkb-dead' };
+                fkbStates.forEach((st, i) => {
+                    const el = document.getElementById(fkbMap[st]);
+                    if (el) {
+                        const arr = results[i] || [];
+                        el.innerHTML = arr.length ? arr.map(renderKanbanCard).join('') : '<span class="dim">—</span>';
+                    }
+                });
+            } catch (e) {
+                console.error('fetchKanban', e);
+            }
+        }
         
+        async function fetchClawActivity(clawId) {
+            try {
+                const r = await fetch(`${API_BASE}/claws/${encodeURIComponent(clawId)}/activity?limit=20`);
+                if (!r.ok) return '';
+                const j = await r.json();
+                const rows = (j.activity || []).map(a => {
+                    const ts = new Date((a.timestamp || 0) * 1000).toISOString().slice(11, 19);
+                    return ts + '  ' + (a.action || '') + '  ' + (a.fact_id || '') + '  ' + (a.detail || '');
+                });
+                return rows.join('\n');
+            } catch (e) {
+                return '';
+            }
+        }
+
         async function fetchClaws() {
             try {
                 const response = await fetch(`${API_BASE}/claws`);
                 const claws = await response.json();
-                
+
                 const tbody = document.querySelector('#claws-table tbody');
                 if (claws.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${t('emptyClaws')}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="10" class="empty-state">${t('emptyClaws')}</td></tr>`;
+                    populateSourceClawSelect([]);
                     return;
                 }
-                
+
+                let activityHtml = '';
+                if (expandedClawId) {
+                    activityHtml = await fetchClawActivity(expandedClawId);
+                }
+
                 tbody.innerHTML = claws.map(c => {
                     const caps = (c.capabilities || []).join(', ') || '-';
                     const isOpen = expandedClawId === c.claw_id;
+                    const hb = c.last_heartbeat ? `<span class="heartbeat-dot ${heartbeatClass(c.last_heartbeat)}" title="${escapeHtml(String(c.last_heartbeat))}"></span>` : '—';
+                    const tec = c.transmit_error_counter != null ? c.transmit_error_counter : 0;
+                    const tecHtml = `<span style="color:${tecColor(tec)}">${tec}</span>`;
+                    const claims = countClaimsForClaw(c.claw_id);
                     return `
                     <tr>
                         <td><button type="button" class="expand-btn" onclick="toggleClawRow('${c.claw_id}')">${isOpen ? '▼' : '▶'}</button></td>
                         <td><code>${escapeHtml(c.claw_id)}</code></td>
                         <td>${escapeHtml(c.name)}</td>
                         <td>${getStateBadge(c.state)}</td>
+                        <td>${hb}</td>
+                        <td>${escapeHtml(formatUptime(c.connected_at))}</td>
+                        <td>${claims}</td>
+                        <td>${tecHtml}</td>
                         <td>${escapeHtml(caps)}</td>
                         <td>${formatReliability(c.reliability_score)}</td>
                     </tr>
                     <tr class="claw-detail-row" style="display:${isOpen ? 'table-row' : 'none'}">
-                        <td colspan="6">${renderClawDetailCell(c)}</td>
+                        <td colspan="10">${renderClawDetailCell(c, isOpen ? activityHtml : '')}</td>
                     </tr>
                 `;
                 }).join('');
+                populateSourceClawSelect(claws);
             } catch (err) {
                 console.error('Failed to fetch claws:', err);
             }
         }
         
-        async function fetchFacts() {
-            try {
-                let url = `${API_BASE}/facts?limit=50`;
-                if (currentFactFilter !== 'all') {
-                    url += `&state=${currentFactFilter}`;
-                }
-                
-                const response = await fetch(url);
-                const facts = await response.json();
-                
-                const tbody = document.querySelector('#facts-table tbody');
-                if (facts.length === 0) {
-                    const filterLabel = currentFactFilter === 'all' ? '' : t('filter' + currentFactFilter.charAt(0).toUpperCase() + currentFactFilter.slice(1));
-                    tbody.innerHTML = `<tr><td colspan="11" class="empty-state">${t('emptyFacts', filterLabel)}</td></tr>`;
-                    return;
-                }
-                
-                tbody.innerHTML = facts.map(f => {
-                    const isOpen = expandedFactId === f.fact_id;
-                    const domCell = (f.domain_tags && f.domain_tags.length)
-                        ? `<span class="domains-cell" title="${escapeHtml((f.domain_tags || []).join(', '))}">${escapeHtml((f.domain_tags || []).join(', '))}</span>`
-                        : '—';
-                    const src = f.source_claw_id || '';
-                    const claim = f.claimed_by || '';
-                    return `
+        function applyClientFactFilters(facts) {
+            const typeQ = (document.getElementById('fact-type-filter') && document.getElementById('fact-type-filter').value.trim().toLowerCase()) || '';
+            const srcQ = (document.getElementById('source-claw-filter') && document.getElementById('source-claw-filter').value) || '';
+            return facts.filter(f => {
+                if (typeQ && String(f.fact_type || '').toLowerCase().indexOf(typeQ) < 0) return false;
+                if (srcQ && f.source_claw_id !== srcQ) return false;
+                return true;
+            });
+        }
+
+        function renderFactsTableRows(facts) {
+            const tbody = document.querySelector('#facts-table tbody');
+            const filtered = applyClientFactFilters(facts);
+            if (filtered.length === 0) {
+                const filterLabel = currentFactFilter === 'all' ? '' : (t('filter' + currentFactFilter.charAt(0).toUpperCase() + currentFactFilter.slice(1)) || currentFactFilter);
+                tbody.innerHTML = `<tr><td colspan="16" class="empty-state">${t('emptyFacts', filterLabel)}</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = filtered.map(f => {
+                const isOpen = expandedFactId === f.fact_id;
+                const domCell = (f.domain_tags && f.domain_tags.length)
+                    ? `<span class="domains-cell" title="${escapeHtml((f.domain_tags || []).join(', '))}">${escapeHtml((f.domain_tags || []).join(', '))}</span>`
+                    : '—';
+                const src = f.source_claw_id || '';
+                const claim = f.claimed_by || '';
+                const conf = f.confidence != null ? Math.round(f.confidence * 100) : 100;
+                const cor = (f.corroborations || []).length;
+                const ctr = (f.contradictions || []).length;
+                const trust = `<span class="dim">+${cor}/-${ctr}</span>`;
+                const sup = f.superseded_by
+                    ? `<button type="button" class="chain-link" onclick="openFactModal('${f.superseded_by}')">${escapeHtml(shortId(f.superseded_by))}</button>`
+                    : '—';
+                const brk = isChainBrokenFact(f) ? `<span class="tree-broken" title="${escapeHtml(t('brokenChain'))}">⚠</span>` : `<span class="dim">${escapeHtml(t('okChain'))}</span>`;
+                const confBar = `<div class="confidence-bar" title="${conf}%"><div class="confidence-fill" style="width:${conf}%"></div></div>`;
+                return `
                     <tr>
                         <td><button type="button" class="expand-btn" onclick="toggleFactRow('${f.fact_id}')">${isOpen ? '▼' : '▶'}</button></td>
                         <td>${getPriorityIndicator(f.effective_priority != null ? f.effective_priority : f.priority)}</td>
                         <td><code class="fact-id-link" onclick="openFactModal('${f.fact_id}')" title="${escapeHtml(f.fact_id)}">${escapeHtml(f.fact_id)}</code></td>
+                        <td>${brk}</td>
                         <td>${escapeHtml(f.fact_type)}</td>
                         <td>${getFactStateBadge(f.state)}</td>
                         <td><span class="fact-state">${escapeHtml(f.epistemic_state || '')}</span></td>
                         <td>${escapeHtml(f.semantic_kind || '')}</td>
+                        <td>${confBar} <span class="dim">${conf}%</span></td>
+                        <td>${trust}</td>
+                        <td>${sup}</td>
+                        <td>${escapeHtml(ttlRemaining(f))}</td>
                         <td><code>${escapeHtml(src)}</code></td>
                         <td>${claim ? `<code>${escapeHtml(claim)}</code>` : '-'}</td>
                         <td>${timeAgo(f.created_at)}</td>
                         <td>${domCell}</td>
                     </tr>
                     <tr class="fact-detail-row" style="display:${isOpen ? 'table-row' : 'none'}">
-                        <td colspan="11">${renderFactDetailCell(f)}</td>
+                        <td colspan="16">${renderFactDetailCell(f)}</td>
                     </tr>
                 `;
-                }).join('');
+            }).join('');
+        }
+
+        async function fetchFacts() {
+            try {
+                let url = `${API_BASE}/facts?limit=50`;
+                if (currentFactFilter !== 'all') {
+                    url += `&state=${currentFactFilter}`;
+                }
+
+                const response = await fetch(url);
+                const facts = await response.json();
+                lastFactsList = facts;
+                renderFactsTableRows(facts);
             } catch (err) {
                 console.error('Failed to fetch facts:', err);
             }
+        }
+
+        function refilterFactsTable() {
+            renderFactsTableRows(lastFactsList);
         }
         
         async function fetchSchemas() {
@@ -1269,18 +2107,42 @@
         function filterFacts(state) {
             currentFactFilter = state;
             expandedFactId = null;
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.i18n === 'filter' + state.charAt(0).toUpperCase() + state.slice(1) || (state === 'all' && btn.dataset.i18n === 'filterAll'));
+            const key = state === 'all' ? 'filterAll' : ('filter' + state.charAt(0).toUpperCase() + state.slice(1));
+            document.querySelectorAll('#tab-facts .filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.i18n === key);
             });
             fetchFacts();
         }
+
+        function setFactsViewMode(mode) {
+            factsViewMode = mode;
+            const tb = document.getElementById('facts-view-table');
+            const kb = document.getElementById('facts-view-kanban');
+            const wrap = document.getElementById('facts-table-wrap');
+            const kw = document.getElementById('facts-kanban-wrap');
+            if (tb) tb.classList.toggle('active', mode === 'table');
+            if (kb) kb.classList.toggle('active', mode === 'kanban');
+            if (wrap) wrap.style.display = mode === 'table' ? 'block' : 'none';
+            if (kw) kw.style.display = mode === 'kanban' ? 'block' : 'none';
+        }
+
+        function populateSourceClawSelect(claws) {
+            const sel = document.getElementById('source-claw-filter');
+            if (!sel) return;
+            const v = sel.value;
+            sel.innerHTML = '<option value="">' + escapeHtml(t('filterAllSources')) + '</option>' +
+                claws.map(c => '<option value="' + escapeHtml(c.claw_id) + '">' + escapeHtml(c.name || c.claw_id) + '</option>').join('');
+            if (v && [...sel.options].some(o => o.value === v)) sel.value = v;
+        }
         
         async function refreshAll() {
+            await fetchFactsIndex();
             await Promise.all([
                 fetchMetrics(),
                 fetchClaws(),
                 fetchFacts(),
                 fetchSchemas(),
+                fetchKanban(),
             ]);
         }
         
@@ -1298,15 +2160,40 @@
             }
         }
         
+        function appendEventStream(data) {
+            const wrap = document.getElementById('event-stream');
+            if (!wrap) return;
+            const ev = data.event_type || data.type || 'message';
+            const ts = new Date().toISOString().slice(11, 19);
+            const fact = data.fact;
+            const fid = fact ? fact.fact_id : (data.fact_id || '');
+            const ftype = fact ? fact.fact_type : '';
+            const claw = data.claw_id || '';
+            const detail = data.detail || '';
+            const line = `[${ts}] ${ev}  ${fid}  ${ftype}  ${claw ? '→ ' + claw : ''}  ${detail}`;
+            const cls = 'ev-' + String(ev).replace(/[^a-z0-9_]/gi, '_');
+            eventStreamBuffer.push({ html: '<div class="event-line ' + cls + '">' + escapeHtml(line) + '</div>', t: Date.now() });
+            if (eventStreamBuffer.length > 50) eventStreamBuffer.shift();
+            eventTimestamps.push(Date.now());
+            const cutoff = Date.now() - 60000;
+            eventTimestamps = eventTimestamps.filter(x => x > cutoff);
+            const rateEl = document.getElementById('event-rate');
+            if (rateEl) rateEl.textContent = t('eventsPerMin', String(eventTimestamps.length));
+            wrap.innerHTML = eventStreamBuffer.map(x => x.html).reverse().join('');
+        }
+
         function connectWebSocket() {
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${wsProtocol}//${window.location.host}/ws/dashboard`;
             const ws = new WebSocket(wsUrl);
             
             ws.onopen = () => {
+                wsLastConnectTime = Date.now();
                 const el = document.getElementById('ws-status');
                 el.classList.remove('disconnected');
                 el.innerHTML = `● <span data-i18n="live">${t('live')}</span>`;
+                const ex = document.getElementById('ws-extra');
+                if (ex) ex.textContent = (wsReconnectCount > 0 ? t('wsReconnects', String(wsReconnectCount)) + ' · ' : '') + new Date(wsLastConnectTime).toLocaleTimeString();
                 ws.send(JSON.stringify({
                     action: 'subscribe',
                     name: 'dashboard',
@@ -1315,18 +2202,65 @@
             };
             
             ws.onclose = () => {
+                wsReconnectCount++;
                 const el = document.getElementById('ws-status');
                 el.classList.add('disconnected');
                 el.innerHTML = `● <span data-i18n="disconnected">${t('disconnected')}</span>`;
+                const ex = document.getElementById('ws-extra');
+                if (ex) ex.textContent = t('wsReconnects', String(wsReconnectCount));
                 setTimeout(connectWebSocket, 5000);
             };
             
             ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
+                let data;
+                try {
+                    data = JSON.parse(event.data);
+                } catch (e) {
+                    return;
+                }
                 if (data.event_type) {
+                    appendEventStream(data);
                     refreshAll();
                 }
             };
+        }
+
+        function setupTabs() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+                    document.querySelectorAll('.tab-panel').forEach(p => {
+                        p.classList.toggle('active', p.id === 'tab-' + id);
+                    });
+                    try {
+                        localStorage.setItem('factbus_tab', id);
+                    } catch (e) { /* ignore */ }
+                });
+            });
+            const saved = localStorage.getItem('factbus_tab');
+            if (saved) {
+                const b = document.querySelector('.tab-btn[data-tab="' + saved + '"]');
+                if (b) b.click();
+            }
+        }
+
+        function setupKeyboard() {
+            document.addEventListener('keydown', (e) => {
+                if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
+                if (e.key === 'r' || e.key === 'R') {
+                    e.preventDefault();
+                    refreshAll();
+                }
+                const n = parseInt(e.key, 10);
+                if (n >= 1 && n <= 6) {
+                    const tabs = ['overview', 'kanban', 'claws', 'facts', 'events', 'admin'];
+                    const id = tabs[n - 1];
+                    const b = document.querySelector('.tab-btn[data-tab="' + id + '"]');
+                    if (b) b.click();
+                }
+            });
         }
 
         // =====================================================================
@@ -1341,6 +2275,17 @@
                     localStorage.setItem('factbus_admin_key', ak.value);
                 });
             }
+            const ftf = document.getElementById('fact-type-filter');
+            if (ftf) {
+                ftf.addEventListener('input', () => refilterFactsTable());
+            }
+            const scf = document.getElementById('source-claw-filter');
+            if (scf) {
+                scf.addEventListener('change', () => refilterFactsTable());
+            }
+            setupTabs();
+            setupKeyboard();
+            setFactsViewMode('table');
             refreshAll();
             setupAutoRefresh();
             connectWebSocket();

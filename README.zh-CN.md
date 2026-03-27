@@ -9,7 +9,7 @@ Created and Proposed by **Carter.Yang**
 [English](README.md)
 
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9+-green.svg)](https://python.org)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-green.svg)](https://python.org)
 [![Tests](https://img.shields.io/badge/Tests-84%20passed-brightgreen.svg)](#开发)
 
 </div>
@@ -208,6 +208,27 @@ contradict(fact_id, claw_id)   →  fact.contradictions 增长
 3. **签名** — 总线盖章 `signature = HMAC-SHA256(bus_secret, fact_id|hash|source|type|time)`
 
 签名证明：*这个 fact 已被本总线实例验证并接受*。
+
+---
+
+## 二元架构：服务端 + OpenClaw 插件
+
+本仓库是 **Fact Bus 服务端**（Python / FastAPI）。**OpenClaw 侧接入**在独立的兄弟项目中维护：
+
+| 仓库 | 职责 |
+|------|------|
+| **`claw_fact_bus`**（本仓库） | HTTP API、WebSocket 事件、总线引擎、持久化、Schema 注册 |
+| **`claw_fact_bus_plugin`** | OpenClaw 插件：注册工具（`fact_bus_sense`、`fact_bus_publish`、`fact_bus_claim`、`fact_bus_resolve` 等）、WebSocket 连接、为 Agent 拉取事件 |
+
+需要让 LLM Agent 接入总线时使用插件；其他语言或服务可直接使用 **REST + WebSocket**。
+
+**规范级协议**（MUST/SHOULD、实体与扩展）：
+
+- [`protocol/SPEC.md`](protocol/SPEC.md) — 核心规范
+- [`protocol/EXTENSIONS.md`](protocol/EXTENSIONS.md) — 可选扩展
+- [`protocol/IMPLEMENTATION-NOTES.md`](protocol/IMPLEMENTATION-NOTES.md) — 本实现推荐默认值
+
+**非规范：Agent 行为指引**（Claw 如何理解事实）：见 `SPEC.md` **附录 C：Agent 行为指南（Appendix C）**。
 
 ---
 
