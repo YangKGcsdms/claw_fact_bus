@@ -1,490 +1,184 @@
-<div align="center">
+# Claw Fact Bus
 
-# 🦞 Claw Fact Bus
+Claw Fact Bus is a protocol-driven coordination system for multi-agent fact sharing, arbitration, and causation tracking.
 
-**An ecosystem where autonomous claws sense facts flowing in the bus and act upon them.**
-
-Created and Proposed by **Carter.Yang**
-
-[中文文档](README.zh-CN.md)
+中文文档: [README.zh-CN.md](README.zh-CN.md)
 
 [![License: PolyForm Noncommercial](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-green.svg)](https://python.org)
-[![Tests](https://img.shields.io/badge/Tests-84%20passed-brightgreen.svg)](#development)
 
-</div>
+## What this project is
 
----
+This is not just a FastAPI service.  
+It is a protocol-first, multi-agent fact coordination system with:
 
-## The Aquarium: From "Stiff Workflows" to "Self-Organizing Ecosystem"
+- Fact lifecycle management (`publish -> claim -> resolve`)
+- Causation chain tracking across facts
+- Trust and epistemic-state modeling
+- Claw (agent) arbitration and reliability confinement
+- Real-time observability dashboard
 
-Imagine you have deployed 20 powerful AI agents (we call them **Claws**) in your data center.
+Binary architecture:
 
-In a traditional setup, you face two painful choices:
-1. **Manual Workflow Orchestration**: You have to pre-define `If A then B then C` logic for every possible scenario. If the scenario changes slightly, the entire workflow breaks.
-2. **Manual Action Triggering**: You act like a busy switchboard operator, constantly asking A: "What's the status?" and then telling B: "Go fix that."
+- `claw_fact_bus`: protocol server and execution engine
+- `claw_fact_bus_plugin`: OpenClaw integration plugin
 
-**This is too stiff. AI should not be a marionette following orders; it should be a lobster in an aquarium.**
+## Why this exists
 
-### The Lobster Self-Response Model
+### Problem
 
-In the world of **Claw Fact Bus**, your data center becomes a reef aquarium.
+Modern multi-agent systems often suffer from:
 
-There is no master controller, no pre-defined rigid scripts. Instead, **Facts drift through the water (the Bus) like scent trails**. Each lobster reacts to specific scents based on its own instincts (Filters).
+- No shared truth model (facts stay local to each agent)
+- No protocol-level conflict handling
+- No causation trace across agent decisions
+- Poor visibility into why and how decisions happened
 
-```
-                    🌊 Fact Bus (Shared Water Current)
-    ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-    
-    🦞 monitor       → senses: latency spike (environmental change)
-                       → emits:  incident.latency.high (publishes a fact)
-    
-    🦞 analyzer      → senses: incident.* (spontaneous response)
-                       → emits:  db.query.slow (produces a new fact)
-    
-    🦞 db-expert     → senses: db.* (spontaneous response)
-                       → emits:  db.index.recommendation
-    
-    🦞 fixer         → senses: *.recommendation (spontaneous response)
-                       → emits:  change.proposed
-    
-    🦞 approver      → senses: change.proposed (spontaneous response)
-                       → emits:  change.approved
-    
-    🦞 deployer      → senses: change.approved (spontaneous response)
-                       → emits:  db.index.created
-    
-    🦞 monitor       → senses: service latency back to normal ✅
+### Solution
 
-    ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-    No orchestrator. No human intervention. Facts flow, lobsters act. An incident resolved itself.
-```
+Claw Fact Bus introduces:
 
----
-
-## Concept and Problems Solved
-
-### Core Concept: Fact-Driven, Not Command-Driven
-
-Traditional AI collaboration often tries to mimic a human **Command Chain**. But the true power of an AI Agent lies in its **Perception and Reasoning**.
-
-The concept of Fact Bus is to reduce collaboration to its purest form: **Broadcasting information and spontaneous local response**. This draws inspiration from the highly reliable **CAN Bus** protocol used in the automotive industry: every sensor just throws data onto the bus, and every actuator decides for itself which data to listen to.
-
-### Pain Points Addressed
-
-1. **Escape from "Orchestration Hell"**:
-   You no longer need to maintain complex DAGs or state machines. Workflows are not "designed"; they "emerge" through the causal chain of facts. Adding a new feature is as simple as dropping in a new lobster—no need to modify existing logic.
-
-2. **From "Asking" to "Sensing"**:
-   Agents no longer wait to be called (Polling/Triggering); they continuously sense (Sensing). This shifts the system from "passive response" to "proactive collaboration."
-
-3. **Extreme Robustness (Decentralization)**:
-   If an analyzer lobster in the aquarium gets sick (goes down), as long as there are other lobsters that can smell the same scent, the ecosystem keeps running. No single point of failure, no central bottleneck.
-
-4. **Knowledge Evolution and Consensus**:
-   Through the `corroborate` and `contradict` mechanisms, multiple lobsters can debate a single fact, eventually forming a **Consensus**. This addresses the issues of AI hallucinations and untrustworthy outputs.
-
----
-
-## Protocol Design
-
-### The Fact — Immutable Record + Mutable Bus State
-
-Every fact on the bus has two structural zones:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│               IMMUTABLE RECORD (the scent itself)            │
-│           frozen after publish · covered by content_hash     │
-├─────────────────────────────────────────────────────────────┤
-│  fact_id           unique identity                           │
-│  fact_type         dot-notation taxonomy (code.review.needed)│
-│  payload           business data {}                          │
-│  source_claw_id    who published this                        │
-│  created_at        unix timestamp                            │
-│  mode              broadcast / exclusive                     │
-│  priority          0-7 (CAN-style, lower = higher)          │
-│  ttl_seconds       time to live                              │
-│  parent_fact_id    direct causal parent (optional)           │
-│  causation_depth   depth in causal chain (0 = root)          │
-│  confidence        publisher's self-assessed trust [0, 1]    │
-│  content_hash      SHA-256(payload)                          │
-│  domain_tags       domain labels (optional)                  │
-│  need_capabilities required skills to process (optional)     │
-│ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ Extensions ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ │
-│  semantic_kind     observation / request / correction / ...  │
-│  subject_key       groups facts about the same subject       │
-│  supersedes        fact_id this replaces (knowledge update)  │
-├─────────────────────────────────────────────────────────────┤
-│               MUTABLE BUS STATE (the bus's assessment)       │
-│               managed exclusively by the engine              │
-├─────────────────────────────────────────────────────────────┤
-│  state             workflow: published → claimed → resolved  │
-│  claimed_by        which claw owns this (exclusive mode)     │
-│  resolved_at       resolution timestamp                      │
-│  corroborations    list of claw_ids that confirmed           │
-│  contradictions    list of claw_ids that disputed            │
-│ ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ Extensions ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄ │
-│  epistemic_state   truth: asserted → corroborated → ...      │
-│  superseded_by     replaced by which newer fact              │
-└─────────────────────────────────────────────────────────────┘
-```
-
-The content of a published fact **never changes**. Only the bus's assessment of it evolves.
-
-### Dual State Machine
-
-Two orthogonal lifecycles run independently on every fact:
-
-```
-WorkflowState (task progress — Core §5.1):
-  PUBLISHED ──→ CLAIMED ──→ RESOLVED
-       │            │
-       └───→ DEAD ←─┘
-
-EpistemicState (truth lifecycle — Extension 1):
-  ASSERTED → CORROBORATED → CONSENSUS
-      │            │
-      └→ CONTESTED → REFUTED
-              │
-              └→ SUPERSEDED
-```
-
-A fact can be `workflow=CLAIMED` + `epistemic=CONTESTED` — someone is working on it, but the premise has been challenged. These are independent dimensions by design.
-
-### SemanticKind
-
-Not everything on the bus is a raw observation. The `semantic_kind` field classifies what a fact *means* epistemically:
-
-| Kind | What it represents | Example |
-|------|-------------------|---------|
-| `observation` | Something directly sensed | `build.failed`, `cpu.at.92pct` |
-| `assertion` | An inference or judgment | `root_cause.suspected` |
-| `request` | A call to action | `review.needed`, `deploy.requested` |
-| `resolution` | A completed result | `review.completed` |
-| `correction` | Supersedes a previous fact | updated diagnosis |
-| `signal` | Fire-and-forget status | `heartbeat`, `progress.60pct` |
-
-### Knowledge Evolution (Supersede)
-
-Facts about the same subject naturally evolve. A new temperature reading replaces the old one:
-
-```json
-{
-  "fact_type": "env.temperature",
-  "subject_key": "host:web-01/cpu-temp",
-  "payload": { "celsius": 72 },
-  "semantic_kind": "observation"
-}
-```
-
-When a new fact shares the same `subject_key + fact_type`, the bus automatically:
-1. Sets `superseded_by` on the old fact
-2. Transitions old fact to `epistemic_state: SUPERSEDED`
-3. Pushes `FACT_SUPERSEDED` event to subscribers
-
-You can also explicitly supersede by setting the `supersedes` field to a specific `fact_id`.
-
-### Social Validation
-
-Claws can vouch for or challenge facts:
-
-```
-corroborate(fact_id, claw_id)  →  fact.corroborations grows
-                                →  epistemic_state may reach CONSENSUS
-
-contradict(fact_id, claw_id)   →  fact.contradictions grows
-                                →  epistemic_state may reach REFUTED
-```
-
-Consumers filter by trust: `min_epistemic_rank`, `min_confidence`, `exclude_superseded`.
-
-### Content Integrity
-
-Every fact published to the bus goes through an integrity pipeline:
-
-1. **Hash** — `content_hash = SHA-256(canonical payload)`
-2. **Verify** — Bus checks the hash matches
-3. **Sign** — Bus stamps `signature = HMAC-SHA256(bus_secret, fact_id|hash|source|type|time)`
-
-The signature proves: *this fact was verified and accepted by this bus instance*.
-
----
-
-## Binary architecture: server + OpenClaw plugin
-
-This repository is the **Fact Bus server** (Python / FastAPI). The **client integration** for OpenClaw is a separate sibling project:
-
-| Repository | Role |
-|------------|------|
-| **`claw_fact_bus`** (this repo) | HTTP API, WebSocket events, bus engine, persistence, schema registry |
-| **`claw_fact_bus_plugin`** | OpenClaw plugin: register tools (`fact_bus_sense`, `fact_bus_publish`, `fact_bus_claim`, `fact_bus_resolve`, …), connect WebSocket, drain events for agents |
-
-Use the plugin when you want LLM agents to participate in the bus; use **REST + WebSocket** directly from any other language or service.
-
-**Normative protocol** (MUST/SHOULD, entities, extensions):
-
-- [`protocol/SPEC.md`](protocol/SPEC.md) — core specification
-- [`protocol/EXTENSIONS.md`](protocol/EXTENSIONS.md) — optional extensions
-- [`protocol/IMPLEMENTATION-NOTES.md`](protocol/IMPLEMENTATION-NOTES.md) — recommended defaults for this implementation
-
-**Non-normative agent behavior** (how a Claw should interpret facts): `SPEC.md` **Appendix C: Agent Behavioral Guide**.
-
----
-
-## Quick Start
-
-### Local
-
-```bash
-pip install -e ".[dev]"
-python -m claw_fact_bus.server.main
-# → http://localhost:8080/docs
-```
-
-### Docker Compose
-
-```bash
-docker-compose up -d
-open http://localhost:8080/docs
-```
-
----
-
-## API Examples
-
-### 1. Hatch a Claw
-
-```bash
-curl -X POST http://localhost:8080/claws/connect \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "code-reviewer",
-    "description": "Reviews Python code for security issues",
-    "capability_offer": ["review", "python", "security"],
-    "domain_interests": ["python", "auth"],
-    "fact_type_patterns": ["code.*.needed"]
-  }'
-```
-
-Response includes `claw_id` and `token` (carry it in subsequent requests).
-
-### 2. Emit a Fact
-
-```bash
-curl -X POST http://localhost:8080/facts \
-  -H "Content-Type: application/json" \
-  -d '{
-    "fact_type": "code.review.needed",
-    "semantic_kind": "request",
-    "payload": {"file": "auth.py", "pr": 42},
-    "domain_tags": ["python", "auth"],
-    "need_capabilities": ["review", "security"],
-    "priority": 1,
-    "mode": "exclusive",
-    "source_claw_id": "YOUR_CLAW_ID",
-    "token": "YOUR_TOKEN",
-    "subject_key": "pr:42/review",
-    "confidence": 0.95
-  }'
-```
-
-### 3. Claim → Resolve
-
-```bash
-# Grab the fact
-curl -X POST http://localhost:8080/facts/{fact_id}/claim \
-  -d '{"claw_id": "YOUR_CLAW_ID", "token": "YOUR_TOKEN"}'
-
-# Finish and emit child facts
-curl -X POST http://localhost:8080/facts/{fact_id}/resolve \
-  -d '{
-    "claw_id": "YOUR_CLAW_ID",
-    "token": "YOUR_TOKEN",
-    "result_facts": [{
-      "fact_type": "code.review.completed",
-      "payload": {"file": "auth.py", "issues": 2}
-    }]
-  }'
-```
-
-### 4. Social Validation
-
-```bash
-curl -X POST http://localhost:8080/facts/{fact_id}/corroborate \
-  -d '{"claw_id": "ANOTHER_CLAW"}'
-# → {"success": true, "epistemic_state": "corroborated"}
-
-curl -X POST http://localhost:8080/facts/{fact_id}/contradict \
-  -d '{"claw_id": "ANOTHER_CLAW"}'
-# → {"success": true, "epistemic_state": "contested"}
-```
-
-### 5. WebSocket — Live in the Current
-
-```python
-import asyncio, json, websockets
-
-async def claw_life():
-    async with websockets.connect("ws://localhost:8080/ws/reviewer-001") as ws:
-        await ws.send(json.dumps({
-            "action": "subscribe",
-            "name": "code-reviewer",
-            "filter": {
-                "capability_offer": ["review", "python"],
-                "fact_type_patterns": ["code.*.needed"],
-                "semantic_kinds": ["request", "observation"],
-                "min_epistemic_rank": 0,
-                "exclude_superseded": True
-            }
-        }))
-
-        while True:
-            event = json.loads(await ws.recv())
-            match event["event_type"]:
-                case "fact_available":
-                    print(f"🦞 sensed: {event['fact']['fact_type']}")
-                case "fact_trust_changed":
-                    print(f"🌊 trust shift: {event['detail']}")
-                case "fact_superseded":
-                    print(f"♻️  replaced: {event['fact']['fact_id']}")
-```
-
----
+- A shared fact protocol
+- Explicit lifecycle and arbitration semantics
+- Epistemic states (`asserted -> corroborated -> consensus -> contested/refuted`)
+- Causation chains as first-class protocol data
 
 ## Architecture
 
+### Binary architecture
+
+Claw Fact Bus consists of two components:
+
+1. `claw_fact_bus` (this repo)
+   - Fact storage and lifecycle engine
+   - Arbitration, trust, and reliability model
+   - HTTP + WebSocket protocol endpoints
+2. `claw_fact_bus_plugin` (sibling repo)
+   - OpenClaw plugin integration
+   - Tool-based interaction with the Fact Bus
+
+Design intent:
+
+- No SDK coupling
+- No app-specific direct integration layer
+- Plugin-first multi-agent integration path
+
+```mermaid
+flowchart LR
+    Claws[Claws and Agents] -->|Plugin tools or HTTP/WS| Bus[Claw Fact Bus Server]
+    Bus --> Engine[BusEngine]
+    Engine --> Facts[Fact lifecycle]
+    Engine --> Trust[Epistemic trust model]
+    Engine --> Causation[Causation chain tracking]
+    Engine --> Store[JSONL persistence]
+    Engine --> Dash[Dashboard]
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                   🦞 Claw Fact Bus Server                     │
-├──────────────────────────────────────────────────────────────┤
-│  FastAPI                                                      │
-│  ├── REST API  /facts  /claws  /schemas                      │
-│  └── WebSocket /ws/{claw_id}                                 │
-├──────────────────────────────────────────────────────────────┤
-│  Bus Engine                                                   │
-│  ├── Content Integrity  (hash verify + HMAC sign)            │
-│  ├── Dual State Machine (workflow × epistemic)               │
-│  ├── Supersede Index    (subject_key → latest fact)          │
-│  ├── Publish Gate       (5-layer flow control)               │
-│  ├── Filter Engine      (CAN-style + semantic + epistemic)   │
-│  ├── Arbitration        (exclusive fact winner selection)     │
-│  ├── Reliability Mgr    (CAN-style TEC/REC fault isolation)  │
-│  └── Event Dispatch     (WebSocket push + trust events)      │
-├──────────────────────────────────────────────────────────────┤
-│  Schema Registry                                              │
-│  ├── OPEN / WARN / STRICT enforcement                        │
-│  └── Schema evolution validation                              │
-├──────────────────────────────────────────────────────────────┤
-│  Persistence                                                  │
-│  └── JSONL Fact Store (append-only, compaction, recovery)    │
-└──────────────────────────────────────────────────────────────┘
+
+## Core concepts
+
+### Fact
+
+A Fact is the fundamental protocol unit.
+
+Each fact has:
+
+- Workflow state (`published`, `matched`, `claimed`, `processing`, `resolved`, `dead`)
+- Epistemic state (`asserted`, `corroborated`, `consensus`, `contested`, `refuted`, `superseded`)
+- Confidence and trust signals
+- Causation lineage (`parent_fact_id`, `causation_chain`, `causation_depth`)
+
+### Lifecycle
+
+Core workflow progression:
+
+`published -> matched -> claimed -> processing -> resolved -> dead`
+
+### Epistemic state
+
+Trust progression:
+
+- Positive path: `asserted -> corroborated -> consensus`
+- Conflict path: `asserted/corroborated -> contested -> refuted`
+- Evolution path: `* -> superseded`
+
+### Causation
+
+Facts derive from other facts and form explicit causation chains.  
+This enables traceability, debugging, and reasoning-path inspection.
+
+### Claw
+
+A Claw is an agent node that:
+
+- Subscribes to facts via filters
+- Claims exclusive facts when appropriate
+- Processes and resolves facts
+- Produces child facts that extend causation
+
+## Quick start
+
+### Run with Docker
+
+```bash
+docker compose up -d --build
 ```
 
-### Flow Control & Fault Isolation
+Open:
 
-| Mechanism | Purpose | CAN Bus Analogy |
-|-----------|---------|-----------------|
-| Causation depth limit (16) | Prevent cascade storms | Message length limit |
-| Causation cycle detection | Prevent livelocks | Error delimiting |
-| Token bucket rate limit (20/5s) | Per-claw throttle | Transmit buffer |
-| Global load breaker (200/5s) | Bus overload protection | Overload frame |
-| Priority aging (every 30s) | Prevent starvation | Priority arbitration |
-| Dedup window (10s) | Suppress duplicate publishes | Error counter |
-| TEC/REC counters | Reliability scoring + isolation | TEC/REC |
-| Content hash verification | Tamper detection | CRC check |
-| Bus HMAC signature | Authority endorsement | ACK bit |
+- Dashboard: [http://localhost:28080](http://localhost:28080)
+- API docs: [http://localhost:28080/docs](http://localhost:28080/docs)
 
----
+### Health check
 
-## API Reference
+```bash
+curl http://localhost:28080/health
+```
 
-### HTTP Endpoints
+## Plugin integration
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/stats` | Statistics (incl. epistemic distribution) |
-| POST | `/claws/connect` | Register a claw (returns token) |
-| GET | `/claws` | List all claws |
-| POST | `/claws/{id}/heartbeat` | Heartbeat |
-| POST | `/facts` | Publish a fact |
-| GET | `/facts` | Query facts |
-| GET | `/facts/{id}` | Get single fact |
-| POST | `/facts/{id}/claim` | Claim an exclusive fact |
-| POST | `/facts/{id}/release` | Release a claimed fact |
-| POST | `/facts/{id}/resolve` | Resolve a fact |
-| POST | `/facts/{id}/corroborate` | Corroborate (returns new epistemic_state) |
-| POST | `/facts/{id}/contradict` | Contradict (returns new epistemic_state) |
+Claw Fact Bus is designed to be used by agents through the OpenClaw plugin.
 
-### WebSocket Events
+Sibling project:
 
-| Event | Description |
-|-------|-------------|
-| `fact_available` | A new fact matched your filter |
-| `fact_claimed` | A fact was claimed |
-| `fact_resolved` | A fact was resolved |
-| `fact_expired` | TTL expired |
-| `fact_dead` | Entered dead letter |
-| `fact_superseded` | Replaced by a newer fact |
-| `fact_trust_changed` | Epistemic state shifted |
-| `claw_state_changed` | Claw reliability state changed |
+- `../claw_fact_bus_plugin`
 
----
+Plugin responsibilities:
 
-## Configuration
+- Tool-based fact publish/query/claim/resolve flows
+- WebSocket subscription and event handling
+- Agent-facing integration surface
 
-| Env Variable | Default | Description |
-|-------------|---------|-------------|
-| `FACT_BUS_DATA_DIR` | `.data` | Data directory |
-| `FACT_BUS_HOST` | `0.0.0.0` | Listen address |
-| `FACT_BUS_PORT` | `8080` | Port |
-| `FACT_BUS_SECRET` | random | HMAC signing key |
-| `FACT_BUS_ADMIN_KEY` | empty | Admin endpoint key |
+## Dashboard
 
----
+The built-in dashboard provides protocol-level observability:
+
+- Fact lifecycle monitoring
+- Claw health and activity visibility
+- Causation chain exploration
+- Real-time event stream
+- Admin operations for causation and storage maintenance
+
+## Protocol reference
+
+The README stays concise; normative details live in protocol docs:
+
+- [protocol/SPEC.md](protocol/SPEC.md)
+- [protocol/EXTENSIONS.md](protocol/EXTENSIONS.md)
+- [protocol/IMPLEMENTATION-NOTES.md](protocol/IMPLEMENTATION-NOTES.md)
 
 ## Development
 
 ```bash
 pip install -e ".[dev]"
-pytest                  # 84 tests
-ruff check src/
+pytest
 ```
 
----
+## Status
 
-## Glossary
-
-> Because the metaphor is the architecture.
-
-| Term | Meaning |
-|------|---------|
-| **Claw** 🦞 | An autonomous agent node on the bus |
-| **Fact** | An immutable scent trail drifting through the water |
-| **Bus** 🌊 | The shared water current carrying all facts |
-| **Reef** 🪸 | The cluster of claws forming an ecosystem |
-| **Filter** | A claw's senses — what scents it reacts to |
-| **Claim** | A claw grabbing an exclusive scent |
-| **Supersede** | A newer scent replacing an older one about the same subject |
-| **Corroborate** | Another claw confirming: "I smell it too" |
-| **Contradict** | Another claw disputing: "that's not what I smell" |
-
----
+- Core protocol: stable
+- Plugin integration path: available
+- Dashboard: actively evolving
 
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE) — free for non-commercial use.
-
----
-
-**Architecture Sovereignty Notice:**
-The "Lobster Aquarium" metaphor, the dual-state machine (Workflow x Epistemic), and the specific implementation of Fact-based autonomous coordination are original intellectual properties of **Carter.Yang**. Any derivative works or reimplementations of this protocol in other languages or frameworks must explicitly cite the original "Claw Fact Bus" specification and its creator.
-
----
-
-<div align="center">
-
-*No orchestrator. No command chain. Just facts in the water, and lobsters doing what lobsters do.* 🦞
-
-</div>
+[PolyForm Noncommercial 1.0.0](LICENSE)
