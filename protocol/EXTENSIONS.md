@@ -48,6 +48,19 @@ else                               → ASSERTED
 
 `consensus_q` and `refute_q` are implementation-defined quorum values (RECOMMENDED: 2).
 
+> **Design note — `superseded` in the epistemic state enum**: `corroborated`,
+> `contested`, and `refuted` represent positions on the *truth / confidence*
+> axis; `superseded` represents a position on the *freshness / version* axis.
+> Placing them in the same enum is an intentional pragmatic trade-off: it lets
+> a single field drive both filter evaluation and event routing without
+> introducing a separate `knowledge_state` field.
+>
+> The contract is: **freshness takes precedence over confidence**. A fact that
+> once reached `consensus` but has since been superseded is treated as stale
+> knowledge in all filter and routing decisions. Implementations and consumers
+> MUST treat `SUPERSEDED` as the highest-priority terminating condition in the
+> recomputation rule (evaluated before `REFUTED` or any trust rank).
+
 ### Epistemic Rank (for filter comparison)
 
 | State | Rank | Meaning |
@@ -148,6 +161,25 @@ Adds automatic and explicit supersession of facts about the same subject.
 1. **Explicit**: If `fact.supersedes` is set and the target exists, mark the target as superseded.
 2. **Automatic**: If `fact.subject_key` is set and another non-terminal fact shares the same `(subject_key, fact_type)`, mark the older one as superseded.
 
+> **Auto-supersede scope**: Automatic supersession is designed for *latest-wins*
+> fact types — situations where only the most recent value is meaningful, such as
+> sensor readings, deployment status, or current resource utilisation.
+>
+> It is **not appropriate** when multiple concurrent facts of the same type
+> should coexist, such as:
+> - multi-source diagnostic observations
+> - accumulated analysis conclusions
+> - parallel suggestions from independent reviewers
+>
+> To limit automatic supersession to suitable fact types, implementations SHOULD
+> require one of the following conditions to be met before triggering the rule:
+> - The `fact_type`'s registered schema declares `"auto_supersede": true`, OR
+> - The fact's `semantic_kind` ∈ `{observation, signal, correction}` (if the
+>   Semantic Classification extension is active).
+>
+> Publishers wishing to prevent auto-supersession on a per-fact basis SHOULD
+> omit `subject_key` and use explicit `supersedes` links instead.
+
 When a fact is superseded:
 - Set `old_fact.superseded_by = new_fact.fact_id`
 - If Epistemic States extension is active: set `old_fact.epistemic_state = SUPERSEDED`
@@ -211,7 +243,22 @@ Adds CAN-style error counters and threshold-based claw degradation.
 | Field | Type | Description |
 |-------|------|-------------|
 | `transmit_error_counter` | int | TEC — incremented on errors, decremented on successes |
-| `reliability_score` | float 0-1 | Derived from TEC. Used in arbitration if Advanced Arbitration extension is active |
+| `reliability_score` | float 0-1 | Derived from TEC (see mapping table below). Used in arbitration if Advanced Arbitration extension is active |
+
+### Reliability Score Mapping
+
+`reliability_score` maps directly from TEC thresholds to claw state boundaries:
+
+| TEC Range | Claw State | `reliability_score` |
+|-----------|:----------:|:-------------------:|
+| 0 – 127 | ACTIVE | 1.0 |
+| 128 – 255 | DEGRADED | 0.5 |
+| ≥ 256 | ISOLATED | 0.0 |
+
+Implementations SHOULD use this step function (or an equivalent recommended in
+the Implementation Notes) so that `reliability_score` values are comparable
+across nodes on the same bus. An ISOLATED claw scores 0.0 and cannot win
+exclusive arbitration; a DEGRADED claw competes at half weight.
 
 ### Error State Machine
 
@@ -303,8 +350,13 @@ Defines specific parameters for the safety guardrails described in Core §7.2.
 | Global load breaker | threshold | 200 facts per window |
 | Global load breaker | behavior | Only accept priority ≤ 1 (HIGH) |
 | Priority aging | interval | 30 seconds |
-| Priority aging | increment | +1 (lower priority value = higher priority) |
+| Priority aging | step | −1 (decrements numeric value toward higher priority) |
 | Priority aging | floor | 1 (HIGH) — never age into CRITICAL |
+
+> **Direction note**: The priority scale is `1 = HIGH … N = LOW`. Aging raises
+> priority by **decrementing** the numeric value by 1 each interval until
+> the floor is reached. A step of +1 would decrease priority — the opposite
+> of the intended anti-starvation behaviour.
 
 ### Admission Check Order
 

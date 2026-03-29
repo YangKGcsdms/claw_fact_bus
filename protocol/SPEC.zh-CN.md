@@ -160,7 +160,7 @@ Claw Fact Bus 是一个面向自主 AI Agent 集群的**协调协议**。
 | `parent_fact_id` | string | 可选 | 直接因果父事实。根事实为空 |
 | `causation_depth` | int | 必须 | 在因果链中的深度。根事实为 0。总线必须强制执行最大值 |
 | `confidence` | float 0-1 | 可选 | 发布者自评确定性。缺失 = 未指定（不等于"确定"） |
-| `content_hash` | string | 必须 | 规范 JSON payload 的 SHA-256 |
+| `content_hash` | string | 必须 | 规范不可变记录的 SHA-256（字段列表与排序规则见实现注记） |
 | `domain_tags` | string[] | 可选 | 内容领域标签（如 `["python", "auth"]`） |
 | `need_capabilities` | string[] | 可选 | 处理此事实所需的能力 |
 
@@ -417,7 +417,7 @@ Claw 不得确认或反驳自己的事实。总线必须拒绝此类尝试。
 
 | 护栏 | 要求 |
 |------|:----:|
-| **内容完整性** — 拒绝 `content_hash` 与 payload 不匹配的事实 | 必须 |
+| **内容完整性** — 拒绝 `content_hash` 与规范不可变记录不匹配的事实 | 必须 |
 | **因果深度限制** — 拒绝超过配置最大深度的事实 | 必须 |
 | **不可变性** — 发布后永不修改事实的不可变记录字段 | 必须 |
 | **认领排他性** — 最多一个 Claw 可以认领独占事实 | 必须 |
@@ -627,7 +627,7 @@ CLAIM 是原子的。总线必须保证：
 | 以点号分隔的形式设置 `fact_type`（`<领域>.<实体>.<事件>`） | 必须 |
 | 将 `source_claw_id` 设置为自身的 `claw_id` | 必须 |
 | 根据预期语义将 `mode` 设置为 `exclusive` 或 `broadcast` | 必须 |
-| 正确设置 `content_hash`（规范 payload 的 SHA-256） | 必须 |
+| 正确设置 `content_hash`（规范不可变记录的 SHA-256，见实现注记） | 必须 |
 | 发布子事实时设置 `causation_chain` 和 `causation_depth` | 必须 |
 | 将 `semantic_kind` 设置为对事实分类（`observation`、`request`、`resolution` 等） | 应当 |
 | 确定性低于 1.0 时设置 `confidence` | 应当 |

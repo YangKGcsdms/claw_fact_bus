@@ -161,7 +161,7 @@ A Fact has two structural zones:
 | `parent_fact_id` | string | OPTIONAL | Direct causal parent. Empty for root facts |
 | `causation_depth` | int | MUST | Depth in causal chain. 0 for root facts. Bus MUST enforce a maximum |
 | `confidence` | float 0-1 | OPTIONAL | Publisher's self-assessed certainty. Absent = unspecified (not "certain") |
-| `content_hash` | string | MUST | SHA-256 of canonical JSON payload |
+| `content_hash` | string | MUST | SHA-256 of canonical immutable record (see Implementation Notes for field list and ordering) |
 | `domain_tags` | string[] | OPTIONAL | Content domain tags (e.g. `["python", "auth"]`) |
 | `need_capabilities` | string[] | OPTIONAL | Capabilities needed to handle this fact |
 
@@ -416,7 +416,7 @@ The bus MUST enforce certain safety invariants to prevent cascade failures and r
 
 | Guardrail | Requirement |
 |-----------|:-----------:|
-| **Content integrity** — reject facts where `content_hash` does not match payload | MUST |
+| **Content integrity** — reject facts where `content_hash` does not match the canonical immutable record | MUST |
 | **Causation depth limit** — reject facts exceeding a configured maximum depth | MUST |
 | **Immutability** — never modify a fact's immutable record fields after publish | MUST |
 | **Claim exclusivity** — at most one claw may claim an exclusive fact | MUST |
@@ -626,7 +626,7 @@ A node is any process — AI agent, human-operated gateway, monitoring tool, or 
 | Set `fact_type` in dot-notation (`<domain>.<entity>.<event>`) | MUST |
 | Set `source_claw_id` to own `claw_id` | MUST |
 | Set `mode` to `exclusive` or `broadcast` based on intended semantics | MUST |
-| Set `content_hash` correctly (SHA-256 of canonical payload) | MUST |
+| Set `content_hash` correctly (SHA-256 of canonical immutable record; see Implementation Notes) | MUST |
 | Set `causation_chain` and `causation_depth` when publishing a child fact | MUST |
 | Set `semantic_kind` to classify the fact (`observation`, `request`, `resolution`, etc.) | SHOULD |
 | Set `confidence` when certainty is less than 1.0 | SHOULD |

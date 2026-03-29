@@ -48,6 +48,10 @@ English: [EXTENSIONS.md](EXTENSIONS.md)
 
 `consensus_q` 和 `refute_q` 是实现定义的法定人数值（推荐：2）。
 
+> **设计说明 — `superseded` 置于认知状态枚举中**：`corroborated`、`contested`、`refuted` 反映的是**真值/置信度**维度；`superseded` 反映的是**新鲜度/版本**维度。将它们放入同一个枚举是有意为之的工程权衡：它允许用单一字段同时驱动过滤评估和事件路由，而无需引入额外的 `knowledge_state` 字段。
+>
+> 契约如下：**新鲜度优先于置信度**。一个曾经达到 `consensus` 但随后被取代的事实，在所有过滤和路由决策中都被视为过时知识。实现者和消费者必须将 `SUPERSEDED` 视为重新计算规则中优先级最高的终态条件（在 `REFUTED` 或任何信任等级之前评估）。
+
 ### 认知等级（用于过滤器比较）
 
 | 状态 | 等级 | 含义 |
@@ -148,6 +152,19 @@ English: [EXTENSIONS.md](EXTENSIONS.md)
 1. **显式取代**：如果 `fact.supersedes` 已设置且目标存在，将目标标记为已取代。
 2. **自动取代**：如果 `fact.subject_key` 已设置且另一个非终态事实共享相同的 `(subject_key, fact_type)`，将较旧的那个标记为已取代。
 
+> **自动取代适用范围**：自动取代专为**最新值胜出**型事实设计——即只有最新值有意义的场景，例如传感器读数、部署状态或资源占用率。
+>
+> 对于以下情形，自动取代**不适用**：同一类型下多个并发事实应当并存，例如：
+> - 多来源诊断观测
+> - 积累性分析结论
+> - 来自独立评审者的并行建议
+>
+> 为将自动取代限制在合适的事实类型上，实现**应当**要求满足以下条件之一才触发该规则：
+> - 该 `fact_type` 的注册 Schema 声明了 `"auto_supersede": true`，**或**
+> - 事实的 `semantic_kind` ∈ `{observation, signal, correction}`（如果语义分类扩展已激活）。
+>
+> 希望在单个事实层面阻止自动取代的发布方，**应当**省略 `subject_key` 字段，改用显式的 `supersedes` 链接。
+
 当事实被取代时：
 - 设置 `old_fact.superseded_by = new_fact.fact_id`
 - 如果认知状态扩展已激活：设置 `old_fact.epistemic_state = SUPERSEDED`
@@ -211,7 +228,19 @@ Schema 应支持向后兼容的演化：
 | 字段 | 类型 | 描述 |
 |------|------|------|
 | `transmit_error_counter` | int | TEC — 错误时增加，成功时减少 |
-| `reliability_score` | float 0-1 | 从 TEC 派生。如果高级仲裁扩展已激活，则用于仲裁 |
+| `reliability_score` | float 0-1 | 从 TEC 派生（见下方映射表）。如果高级仲裁扩展已激活，则用于仲裁 |
+
+### reliability_score 映射
+
+`reliability_score` 直接从 TEC 阈值映射到 claw 状态边界：
+
+| TEC 范围 | Claw 状态 | `reliability_score` |
+|---------|:---------:|:-------------------:|
+| 0 – 127 | ACTIVE | 1.0 |
+| 128 – 255 | DEGRADED | 0.5 |
+| ≥ 256 | ISOLATED | 0.0 |
+
+实现**应当**使用此阶梯函数（或实现注记中推荐的等效函数），以确保同一总线上各节点的 `reliability_score` 具有可比性。被隔离的 claw 得分为 0.0，无法赢得独占仲裁；降级中的 claw 以一半权重参与竞争。
 
 ### 错误状态机
 
@@ -303,8 +332,10 @@ score = (capability_overlap × 10 + domain_overlap × 5 + type_pattern_hit × 3)
 | 全局负载断路器 | 阈值 | 每窗口 200 个事实 |
 | 全局负载断路器 | 行为 | 只接受优先级 ≤ 1（HIGH）的事实 |
 | 优先级老化 | 间隔 | 30 秒 |
-| 优先级老化 | 增量 | +1（较低优先级值 = 较高优先级） |
+| 优先级老化 | 步长 | −1（数值递减，向更高优先级方向推进） |
 | 优先级老化 | 下限 | 1（HIGH）— 永不老化到 CRITICAL |
+
+> **方向说明**：优先级数值越小代表优先级越高（`1 = HIGH … N = LOW`）。老化的目的是提升低优先级事实的优先级，因此每经过一个间隔，数值**减少** 1，直到达到下限。若步长为 +1 则方向相反，会使优先级越来越低，与防饥饿机制的意图完全相悖。
 
 ### 准入检查顺序
 
