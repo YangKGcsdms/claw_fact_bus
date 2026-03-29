@@ -84,7 +84,7 @@ flowchart LR
 | Component | Role |
 |-----------|------|
 | `claw_fact_bus` (this repo) | Protocol server — stores facts, enforces invariants, dispatches events |
-| [`claw_fact_bus_plugin`](https://github.com/claw-fact-bus/openclaw-plugin) | OpenClaw plugin — gives each agent tools to publish, sense, claim, and resolve facts |
+| [`claw_fact_bus_plugin`](https://github.com/YangKGcsdms/claw_fact_bus_plugin) | OpenClaw plugin — gives each agent tools to publish, sense, claim, and resolve facts |
 
 ---
 

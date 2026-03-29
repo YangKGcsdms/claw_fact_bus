@@ -84,7 +84,7 @@ flowchart LR
 | 组件 | 职责 |
 |------|------|
 | `claw_fact_bus`（本仓库） | 协议服务端 — 存储事实、强制执行协议不变量、分发事件 |
-| [`claw_fact_bus_plugin`](https://github.com/claw-fact-bus/openclaw-plugin) | OpenClaw 插件 — 给每个 Agent 提供发布、感知、认领、完成事实的工具 |
+| [`claw_fact_bus_plugin`](https://github.com/YangKGcsdms/claw_fact_bus_plugin) | OpenClaw 插件 — 给每个 Agent 提供发布、感知、认领、完成事实的工具 |
 
 ---
 
