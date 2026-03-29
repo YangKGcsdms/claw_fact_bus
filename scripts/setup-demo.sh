@@ -10,6 +10,7 @@
 #   ~/.claw-fact-bus-demo/setup-demo.sh --logs product
 #   ~/.claw-fact-bus-demo/setup-demo.sh --stop
 #   ~/.claw-fact-bus-demo/setup-demo.sh --reset
+#   ~/.claw-fact-bus-demo/setup-demo.sh --doctor
 #
 # 环境变量见脚本末尾或运行:  bash setup-demo.sh --help
 
@@ -20,12 +21,11 @@ SETUP_SCRIPT_URL="${SETUP_SCRIPT_URL:-https://raw.githubusercontent.com/YangKGcs
 
 CLAW_DEMO_HOME="${CLAW_DEMO_HOME:-$HOME/.claw-fact-bus-demo}"
 FACT_BUS_REPO_URL="${FACT_BUS_REPO_URL:-https://github.com/YangKGcsdms/claw_fact_bus.git}"
-PLUGIN_REPO_URL="${PLUGIN_REPO_URL:-https://github.com/YangKGcsdms/claw_fact_bus_plugin.git}"
 OPENCLAW_REPO_URL="${OPENCLAW_REPO_URL:-https://github.com/openclaw/openclaw.git}"
+PLUGIN_NPM_PKG="${PLUGIN_NPM_PKG:-@claw-fact-bus/openclaw-plugin}"
 
-# Upstream openclaw uses main; many forks use master for this repo + plugin — override with DEMO_*_REF if needed.
+# Upstream openclaw uses main; this repo defaults to master — override with DEMO_*_REF if needed.
 DEMO_FACT_BUS_REF="${DEMO_FACT_BUS_REF:-master}"
-DEMO_PLUGIN_REF="${DEMO_PLUGIN_REF:-master}"
 DEMO_OPENCLAW_REF="${DEMO_OPENCLAW_REF:-main}"
 
 OPENROUTER_MODEL="${OPENROUTER_MODEL:-openai/gpt-4o-mini}"
@@ -62,13 +62,14 @@ require_cmd() {
 }
 
 usage() {
-  cat <<'USAGE'
+  cat <<EOF
 Claw Fact Bus multi-agent demo installer
 
 Commands:
-  (default)     Clone repos, build, generate configs, start stack
+  (default)     Clone repos, install plugin, build images, start stack
   --install     Same as default
   --status      Show container and port status
+  --doctor      Run diagnostics (docker, ports, compose, HTTP health)
   --stop        Stop stack (docker compose down)
   --stop --clean   Stop and remove volumes (docker compose down -v)
   --logs [name] Follow logs: fact-bus | product | dev | test | ops (default: all services)
@@ -80,15 +81,15 @@ Environment (install):
   CLAW_DEMO_HOME       Demo directory (default: ~/.claw-fact-bus-demo)
   OPENROUTER_MODEL     Model id without openrouter/ prefix (default: openai/gpt-4o-mini)
   FACT_BUS_HOST_PORT   Host port for Fact Bus HTTP (default: 28080)
+    (OpenClaw ports are fixed in this demo: ${PORT_PRODUCT}/${PORT_DEV}/${PORT_TEST}/${PORT_OPS})
   DEMO_SKIP_BUILD      Set to 1 to skip docker build if images exist
   DEMO_FACT_BUS_REF    Git ref for claw_fact_bus (default: master)
-  DEMO_PLUGIN_REF      Git ref for claw_fact_bus_plugin (default: master)
   DEMO_OPENCLAW_REF    Git ref for openclaw (default: main)
+  PLUGIN_NPM_PKG       npm package for plugin (default: @claw-fact-bus/openclaw-plugin)
   FACT_BUS_REPO_URL    Override clone URL
-  PLUGIN_REPO_URL
   OPENCLAW_REPO_URL
   SETUP_SCRIPT_URL     URL to re-fetch installer copy when piping from curl
-USAGE
+EOF
 }
 
 # Resolve DEMO_HOME to absolute path
@@ -144,7 +145,10 @@ clone_one() {
     if ! git -C "$dir" checkout "$ref" 2>/dev/null && ! git -C "$dir" checkout "origin/$ref" 2>/dev/null; then
       checkout_ref_or_fallback "$dir" "$ref" "$name"
     fi
-    git -C "$dir" pull --ff-only 2>/dev/null || warn "git pull --ff-only failed for $name (non-fatal). If stuck, run --reset."
+    git -C "$dir" pull --ff-only || {
+      warn "git pull --ff-only failed for $name. The working tree may be dirty or diverged."
+      fail "Cannot update $name cleanly. Run: $(basename "${BASH_SOURCE[0]:-setup-demo.sh}") --reset"
+    }
   fi
 }
 
@@ -185,7 +189,7 @@ save_installer_copy() {
     curl -fsSL "$SETUP_SCRIPT_URL" -o "$dest" || fail "Could not download $SETUP_SCRIPT_URL. Set SETUP_SCRIPT_URL or copy the script manually."
   fi
   chmod +x "$dest"
-  echo "Installer saved: $dest"
+  echo "Saved local management copy: $dest  (use this for --status, --logs, --stop, --reset, --doctor)"
 }
 
 write_version_file() {
@@ -196,7 +200,7 @@ write_version_file() {
 setup_version=${SETUP_VERSION}
 created_at=${ts}
 fact_bus_ref=${DEMO_FACT_BUS_REF}
-plugin_ref=${DEMO_PLUGIN_REF}
+plugin_npm=${PLUGIN_NPM_PKG}
 openclaw_ref=${DEMO_OPENCLAW_REF}
 model=openrouter/${OPENROUTER_MODEL}
 fact_bus_port=${FACT_BUS_HOST_PORT}
@@ -236,21 +240,12 @@ wait_http_soft() {
   return 1
 }
 
-check_node_version() {
-  local major
-  major="$(node -p 'parseInt(process.versions.node.split(".")[0],10)' 2>/dev/null)" || fail "Could not read Node.js version"
-  if [[ "$major" -lt 22 ]]; then
-    fail "Node.js 22+ required for plugin build (found major=$major)"
-  fi
-}
-
 install_main() {
   require_cmd docker
   docker info >/dev/null 2>&1 || fail "Docker daemon not running"
   docker compose version >/dev/null 2>&1 || fail "docker compose (v2) required"
   require_cmd node
   require_cmd npm
-  check_node_version
   require_cmd openssl
   require_cmd python3
   require_cmd curl
@@ -274,15 +269,18 @@ install_main() {
   check_ports_free
 
   local FACT_BUS_DIR="$DEMO_HOME/claw_fact_bus"
-  local PLUGIN_DIR="$DEMO_HOME/claw_fact_bus_plugin"
   local OPENCLAW_DIR="$DEMO_HOME/openclaw"
+  local PLUGIN_DIR="$DEMO_HOME/plugin"
 
   clone_one "$FACT_BUS_DIR" "$FACT_BUS_REPO_URL" "$DEMO_FACT_BUS_REF" "claw_fact_bus"
-  clone_one "$PLUGIN_DIR" "$PLUGIN_REPO_URL" "$DEMO_PLUGIN_REF" "claw_fact_bus_plugin"
   clone_one "$OPENCLAW_DIR" "$OPENCLAW_REPO_URL" "$DEMO_OPENCLAW_REF" "openclaw"
 
-  step "Building claw_fact_bus_plugin"
-  (cd "$PLUGIN_DIR" && npm install && npm run build)
+  step "Installing plugin: ${PLUGIN_NPM_PKG}"
+  mkdir -p "$PLUGIN_DIR"
+  if [[ ! -f "$PLUGIN_DIR/package.json" ]]; then
+    (cd "$PLUGIN_DIR" && npm init -y >/dev/null 2>&1)
+  fi
+  (cd "$PLUGIN_DIR" && npm install "${PLUGIN_NPM_PKG}@latest")
 
   if [[ "$DEMO_SKIP_BUILD" == "1" ]]; then
     step "Skipping Docker build (DEMO_SKIP_BUILD=1); ensure images: $FACT_BUS_IMAGE, $OPENCLAW_IMAGE"
@@ -304,6 +302,7 @@ install_main() {
 
   python3 - "$DEMO_HOME/roles" "$PRIMARY_MODEL" "$TOK_PRODUCT" "$TOK_DEV" "$TOK_TEST" "$TOK_OPS" <<'PY'
 import json
+import os
 import sys
 
 roles_dir, primary, t_prod, t_dev, t_test, t_ops = sys.argv[1:7]
@@ -363,7 +362,7 @@ roles = {
     },
 }
 
-plugin_path = "/home/node/plugins/claw_fact_bus_plugin"
+plugin_path = "/home/node/plugins/@claw-fact-bus/openclaw-plugin"
 
 for role, cfg in roles.items():
     base = os.path.join(roles_dir, role)
@@ -462,7 +461,7 @@ services:
     volumes:
       - ./roles/product/config:/home/node/.openclaw
       - ./roles/product/workspace:/home/node/.openclaw/workspace
-      - ./claw_fact_bus_plugin:/home/node/plugins/claw_fact_bus_plugin:ro
+      - ./plugin/node_modules:/home/node/plugins:ro
     init: true
     restart: unless-stopped
     command:
@@ -507,7 +506,7 @@ services:
     volumes:
       - ./roles/dev/config:/home/node/.openclaw
       - ./roles/dev/workspace:/home/node/.openclaw/workspace
-      - ./claw_fact_bus_plugin:/home/node/plugins/claw_fact_bus_plugin:ro
+      - ./plugin/node_modules:/home/node/plugins:ro
     init: true
     restart: unless-stopped
     command:
@@ -552,7 +551,7 @@ services:
     volumes:
       - ./roles/test/config:/home/node/.openclaw
       - ./roles/test/workspace:/home/node/.openclaw/workspace
-      - ./claw_fact_bus_plugin:/home/node/plugins/claw_fact_bus_plugin:ro
+      - ./plugin/node_modules:/home/node/plugins:ro
     init: true
     restart: unless-stopped
     command:
@@ -597,7 +596,7 @@ services:
     volumes:
       - ./roles/ops/config:/home/node/.openclaw
       - ./roles/ops/workspace:/home/node/.openclaw/workspace
-      - ./claw_fact_bus_plugin:/home/node/plugins/claw_fact_bus_plugin:ro
+      - ./plugin/node_modules:/home/node/plugins:ro
     init: true
     restart: unless-stopped
     command:
@@ -673,7 +672,8 @@ Commands:
   ${DEMO_HOME}/setup-demo.sh --stop
   ${DEMO_HOME}/setup-demo.sh --reset
 
-Security: API keys are stored under ${DEMO_HOME}/roles/*/config/openclaw.json
+Security: OPENROUTER_API_KEY is injected via docker compose environment (not stored on disk).
+         Role configs and gateway tokens: ${DEMO_HOME}/roles/*/config/openclaw.json
          Remove everything:  rm -rf ${DEMO_HOME}
 
 Publish facts (requires source_claw_id; token may be empty ""):
@@ -711,7 +711,13 @@ cmd_status() {
   [[ -f "$cf" ]] || fail "No docker-compose.yml in $DEMO_HOME"
   docker compose -f "$cf" --project-directory "$DEMO_HOME" ps -a
   echo ""
-  echo "Ports: Fact Bus ${FACT_BUS_HOST_PORT:-28080}, OpenClaw ${PORT_PRODUCT}/${PORT_DEV}/${PORT_TEST}/${PORT_OPS}"
+  local fb_port="${FACT_BUS_HOST_PORT:-28080}"
+  if [[ -f "$DEMO_HOME/.version" ]]; then
+    local saved_port
+    saved_port="$(grep '^fact_bus_port=' "$DEMO_HOME/.version" | cut -d= -f2)"
+    [[ -n "$saved_port" ]] && fb_port="$saved_port"
+  fi
+  echo "Ports: Fact Bus ${fb_port}, OpenClaw ${PORT_PRODUCT}/${PORT_DEV}/${PORT_TEST}/${PORT_OPS}"
   if [[ -f "$DEMO_HOME/.version" ]]; then
     echo "--- $DEMO_HOME/.version ---"
     cat "$DEMO_HOME/.version"
@@ -743,7 +749,16 @@ cmd_logs() {
 
 cmd_reset() {
   require_cmd docker
-  local h="${CLAW_DEMO_HOME/#\~/$HOME}"
+  local h=""
+  local self="${BASH_SOURCE[0]:-}"
+  if [[ -n "$self" && -f "$self" ]]; then
+    local self_dir
+    self_dir="$(cd "$(dirname "$self")" && pwd)"
+    if [[ -f "$self_dir/docker-compose.yml" ]]; then
+      h="$self_dir"
+    fi
+  fi
+  [[ -z "$h" ]] && h="${CLAW_DEMO_HOME/#\~/$HOME}"
   local cf="$h/docker-compose.yml"
   if [[ -f "$cf" ]]; then
     docker compose -f "$cf" --project-directory "$h" down -v 2>/dev/null || true
@@ -751,6 +766,107 @@ cmd_reset() {
   rm -rf "$h"
   echo "Removed $h"
   echo "Run install again with OPENROUTER_API_KEY set (e.g. curl ... | bash or bash setup-demo.sh)."
+}
+
+cmd_doctor() {
+  echo "=== Claw Fact Bus demo — doctor ==="
+  if docker info >/dev/null 2>&1; then
+    echo "OK: Docker daemon running"
+  else
+    echo "FAIL: Docker daemon not running"
+  fi
+  if docker compose version >/dev/null 2>&1; then
+    docker compose version
+  else
+    echo "FAIL: docker compose (v2) not available"
+  fi
+
+  if command -v node >/dev/null 2>&1; then
+    echo "=== node ==="
+    echo "OK: $(node -v)"
+  else
+    echo "=== node ==="
+    echo "WARN: node not in PATH (needed for npm install during install)"
+  fi
+
+  resolve_demo_home
+  if [[ -z "$DEMO_HOME" ]] || [[ ! -f "$DEMO_HOME/docker-compose.yml" ]]; then
+    echo "=== demo ==="
+    fail "Demo not installed or missing docker-compose.yml under ${CLAW_DEMO_HOME:-~/.claw-fact-bus-demo}"
+  fi
+
+  local fb_port="${FACT_BUS_HOST_PORT:-28080}"
+  if [[ -f "$DEMO_HOME/.version" ]]; then
+    local saved_port
+    saved_port="$(grep '^fact_bus_port=' "$DEMO_HOME/.version" | cut -d= -f2)"
+    [[ -n "$saved_port" ]] && fb_port="$saved_port"
+  fi
+
+  echo "=== ports (listening on host) ==="
+  local p
+  for p in "$fb_port" "$PORT_PRODUCT" "$PORT_DEV" "$PORT_TEST" "$PORT_OPS"; do
+    if port_busy "$p"; then
+      echo "  $p: listening"
+    else
+      echo "  $p: not listening"
+    fi
+  done
+
+  echo "=== compose ps ==="
+  docker compose -f "$DEMO_HOME/docker-compose.yml" --project-directory "$DEMO_HOME" ps -a
+
+  require_cmd curl
+  require_cmd python3
+
+  echo "=== HTTP: Fact Bus /health ==="
+  if curl -fsS -o /dev/null --max-time 5 "http://127.0.0.1:${fb_port}/health"; then
+    echo "OK: http://127.0.0.1:${fb_port}/health"
+  else
+    echo "FAIL: http://127.0.0.1:${fb_port}/health"
+  fi
+
+  echo "=== HTTP: OpenClaw gateways /healthz ==="
+  local role port
+  for role in product dev test ops; do
+    case "$role" in
+      product) port=$PORT_PRODUCT ;;
+      dev) port=$PORT_DEV ;;
+      test) port=$PORT_TEST ;;
+      ops) port=$PORT_OPS ;;
+    esac
+    if curl -fsS -o /dev/null --max-time 5 "http://127.0.0.1:${port}/healthz"; then
+      echo "OK: $role (http://127.0.0.1:${port}/healthz)"
+    else
+      echo "FAIL: $role (http://127.0.0.1:${port}/healthz)"
+    fi
+  done
+
+  echo "=== HTTP: fact-bus plugin /plugins/fact-bus/health (Bearer token) ==="
+  for role in product dev test ops; do
+    case "$role" in
+      product) port=$PORT_PRODUCT ;;
+      dev) port=$PORT_DEV ;;
+      test) port=$PORT_TEST ;;
+      ops) port=$PORT_OPS ;;
+    esac
+    local cfg="$DEMO_HOME/roles/$role/config/openclaw.json"
+    if [[ ! -f "$cfg" ]]; then
+      echo "SKIP: $role (no $cfg)"
+      continue
+    fi
+    local tok
+    tok="$(python3 -c "import json; print(json.load(open('$cfg'))['gateway']['auth']['token'])" 2>/dev/null)" || tok=""
+    if [[ -z "$tok" ]]; then
+      echo "SKIP: $role (could not read gateway token)"
+      continue
+    fi
+    if curl -fsS -o /dev/null --max-time 5 -H "Authorization: Bearer ${tok}" "http://127.0.0.1:${port}/plugins/fact-bus/health"; then
+      echo "OK: $role plugin health"
+    else
+      echo "FAIL: $role plugin health"
+    fi
+  done
+  echo "=== end doctor ==="
 }
 
 # --- Argument parsing ---------------------------------------------------------
@@ -762,12 +878,17 @@ while [[ $# -gt 0 ]]; do
     --stop) ACTION=stop ;;
     --clean) STOP_CLEAN=true ;;
     --status) ACTION=status ;;
+    --doctor) ACTION=doctor ;;
     --logs)
       ACTION=logs
       shift
-      LOG_SERVICE="${1:-all}"
-      [[ $# -gt 0 ]] && shift || true
-      break
+      if [[ $# -gt 0 ]] && [[ "$1" != --* ]]; then
+        LOG_SERVICE="$1"
+        shift
+      else
+        LOG_SERVICE="all"
+      fi
+      continue
       ;;
     --reset) ACTION=reset ;;
     --install) ACTION=install ;;
@@ -785,6 +906,7 @@ fi
 case "$ACTION" in
   stop) cmd_stop ;;
   status) cmd_status ;;
+  doctor) cmd_doctor ;;
   logs) cmd_logs ;;
   reset) cmd_reset ;;
   install) install_main ;;
