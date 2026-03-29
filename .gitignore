@@ -43,3 +43,6 @@ htmlcov/
 .env
 .env.*
 credentials.json
+
+# Demo runtime artifacts (local dev)
+demo/

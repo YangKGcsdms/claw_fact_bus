@@ -134,6 +134,42 @@ Open:
 curl http://localhost:28080/health
 ```
 
+## Multi-agent demo (4 roles)
+
+One command can start a full demo: **1 Fact Bus + 4 OpenClaw gateways** (Product / Dev / Test / Ops), each with role-specific fact subscriptions via the [OpenClaw plugin](https://github.com/YangKGcsdms/claw_fact_bus_plugin).
+
+**Requirements:** Docker, Docker Compose (v2), **Node.js 22+**, npm, curl, git, and an [OpenRouter](https://openrouter.ai/) API key.
+
+**What it does:** Clones three repositories (`claw_fact_bus`, `claw_fact_bus_plugin`, `openclaw`), builds the plugin and **two** Docker images, generates per-role configs under `~/.claw-fact-bus-demo/`, and starts **five** containers. **First run typically takes 5–15 minutes** and may use **~2–4 GB** disk. Subsequent runs reuse the clone directories and are faster.
+
+**Quick start:**
+
+```bash
+export OPENROUTER_API_KEY=sk-or-...
+curl -fsSL https://raw.githubusercontent.com/YangKGcsdms/claw_fact_bus/main/scripts/setup-demo.sh | bash
+```
+
+**Review before running (recommended):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/YangKGcsdms/claw_fact_bus/main/scripts/setup-demo.sh -o setup-demo.sh
+less setup-demo.sh
+bash setup-demo.sh
+```
+
+**After install**, manage the demo from the copy saved under `~/.claw-fact-bus-demo/setup-demo.sh`:
+
+```bash
+~/.claw-fact-bus-demo/setup-demo.sh --status
+~/.claw-fact-bus-demo/setup-demo.sh --logs product
+~/.claw-fact-bus-demo/setup-demo.sh --stop
+~/.claw-fact-bus-demo/setup-demo.sh --reset   # removes ~/.claw-fact-bus-demo
+```
+
+**Security / privacy:** `OPENROUTER_API_KEY` is passed into containers via Compose and may be persisted under `~/.claw-fact-bus-demo/roles/*/config/`. To remove everything: `rm -rf ~/.claw-fact-bus-demo`.
+
+See `scripts/setup-demo.sh --help` for branch pinning (`DEMO_FACT_BUS_REF`, etc.) and other options.
+
 ## Plugin integration
 
 Claw Fact Bus is designed to be used by agents through the OpenClaw plugin.

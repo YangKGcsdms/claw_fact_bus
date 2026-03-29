@@ -134,6 +134,42 @@ docker compose up -d --build
 curl http://localhost:28080/health
 ```
 
+## 多 Agent Demo（四角色）
+
+一条命令可启动完整演示：**1 个 Fact Bus + 4 个 OpenClaw 网关**（产品 / 开发 / 测试 / 运维），通过 [OpenClaw 插件](https://github.com/YangKGcsdms/claw_fact_bus_plugin) 按角色订阅不同事实。
+
+**前置条件：** Docker、Docker Compose（v2）、**Node.js 22+**、npm、curl、git，以及 [OpenRouter](https://openrouter.ai/) API key。
+
+**脚本会做什么：** 自动 clone 三个仓库（`claw_fact_bus`、`claw_fact_bus_plugin`、`openclaw`），构建插件与 **两个** Docker 镜像，在 `~/.claw-fact-bus-demo/` 下生成各角色配置并启动 **五个** 容器。**首次运行通常需要 5–15 分钟**，磁盘约 **2–4 GB**；再次运行会复用 clone 目录，会快很多。
+
+**快速启动：**
+
+```bash
+export OPENROUTER_API_KEY=sk-or-...
+curl -fsSL https://raw.githubusercontent.com/YangKGcsdms/claw_fact_bus/main/scripts/setup-demo.sh | bash
+```
+
+**先审查再执行（推荐）：**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/YangKGcsdms/claw_fact_bus/main/scripts/setup-demo.sh -o setup-demo.sh
+less setup-demo.sh
+bash setup-demo.sh
+```
+
+**安装后** 使用写入 `~/.claw-fact-bus-demo/setup-demo.sh` 的副本管理：
+
+```bash
+~/.claw-fact-bus-demo/setup-demo.sh --status
+~/.claw-fact-bus-demo/setup-demo.sh --logs product
+~/.claw-fact-bus-demo/setup-demo.sh --stop
+~/.claw-fact-bus-demo/setup-demo.sh --reset   # 删除 ~/.claw-fact-bus-demo
+```
+
+**安全与隐私：** `OPENROUTER_API_KEY` 会通过 Compose 注入容器，并可能保存在 `~/.claw-fact-bus-demo/roles/*/config/`。彻底删除：`rm -rf ~/.claw-fact-bus-demo`。
+
+分支/标签固定等选项见 `scripts/setup-demo.sh --help`（如 `DEMO_FACT_BUS_REF`）。
+
 ## 插件集成
 
 Claw Fact Bus 面向 Agent 的标准接入方式是 OpenClaw 插件。
