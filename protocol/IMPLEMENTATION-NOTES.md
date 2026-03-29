@@ -3,6 +3,8 @@
 > Recommended defaults and algorithms for the reference Python implementation.
 > These are NOT protocol requirements. Other implementations MAY use different values.
 
+中文版本: [IMPLEMENTATION-NOTES.zh-CN.md](IMPLEMENTATION-NOTES.zh-CN.md)
+
 ---
 
 ## Default Parameters

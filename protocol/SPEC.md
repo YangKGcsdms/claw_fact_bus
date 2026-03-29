@@ -4,10 +4,69 @@
 
 Created and Proposed by **Carter.Yang**
 
+中文版本: [SPEC.zh-CN.md](SPEC.zh-CN.md)
+
 ---
 
 The key words "MUST", "MUST NOT", "SHOULD", "SHOULD NOT", "MAY", and "OPTIONAL"
 in this document are to be interpreted as described in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119).
+
+---
+
+## 0. Overview
+
+### 0.1 What This Protocol Is
+
+Claw Fact Bus is a **coordination protocol** for clusters of autonomous AI agents.
+
+Its single sentence: **agents share facts, not commands.**
+
+Each agent publishes immutable statements about what has happened, what exists, or what is needed. Other agents react on their own judgment. No orchestrator decides who does what. Workflow emerges from the causal chain of facts.
+
+### 0.2 Two Implementation Surfaces
+
+The protocol has exactly two implementation surfaces:
+
+```
+┌──────────────────────────────────────────────────────┐
+│                    Claw Fact Bus                      │
+│                                                      │
+│  ┌─────────────┐       facts / events       ┌──────┐ │
+│  │    Bus       │◀──────────────────────────▶│ Node │ │
+│  │ (server)    │                            │(claw)│ │
+│  └─────────────┘                            └──────┘ │
+│                                                      │
+│  Bus: stores facts, enforces protocol invariants,    │
+│       dispatches events, arbitrates claims.          │
+│                                                      │
+│  Node: connects with an identity and filter,         │
+│        senses events, publishes / claims / resolves. │
+└──────────────────────────────────────────────────────┘
+```
+
+**Bus** — the shared communication medium. There is one bus per cluster. It stores facts, enforces all protocol invariants, evaluates filters, arbitrates exclusive claims, and pushes events to connected nodes. The reference implementation is `claw_fact_bus`.
+
+**Node (Claw)** — any agent connected to the bus. There are many nodes per cluster. A node declares its identity and acceptance filter on connect, then participates by publishing, claiming, resolving, and validating facts. Nodes are decoupled from each other; they only interact with the bus. The reference node implementation for OpenClaw agents is `claw_fact_bus_plugin`.
+
+This document specifies what both surfaces MUST and SHOULD do. §11 covers the Bus. §12 covers the Node.
+
+### 0.3 Scope
+
+This specification covers:
+
+- Protocol entities: Fact, Claw, AcceptanceFilter, Bus (§2)
+- Matching and arbitration protocol (§3)
+- Priority model (§4)
+- Fact lifecycle and state machine (§5)
+- Bus operations and sequences (§6)
+- Safety guardrails (§7)
+- Event catalog (§8)
+- Wire format (§9)
+- Extension catalog (§10)
+- **Bus implementation responsibilities** (§11)
+- **Node implementation responsibilities** (§12)
+
+Out of scope: distributed bus deployment, cross-bus federation, transport binding (see §1.4).
 
 ---
 
@@ -435,6 +494,186 @@ See [IMPLEMENTATION-NOTES.md](IMPLEMENTATION-NOTES.md) for recommended default v
 
 ---
 
+## 11. Bus Implementation Responsibilities
+
+This section specifies what a conforming **Bus** implementation MUST, SHOULD, and MAY do. The reference implementation is `claw_fact_bus` (Python / FastAPI).
+
+### 11.1 Core Engine
+
+| Responsibility | Requirement |
+|----------------|:-----------:|
+| Maintain an in-memory fact store indexed by `fact_id` | MUST |
+| Enforce the WorkflowStateMachine transition table (§5) | MUST |
+| Compute and verify `content_hash` on every PUBLISH | MUST |
+| Sign accepted facts with a bus-authority HMAC stamp | SHOULD |
+| Assign a monotonic `sequence_number` to each accepted fact | SHOULD |
+| Persist every state-changing event to an append-only log | SHOULD |
+| Recover in-memory state from the persisted log on startup | SHOULD |
+| Compact the log periodically to bound disk growth | MAY |
+
+### 11.2 Claw Registry
+
+| Responsibility | Requirement |
+|----------------|:-----------:|
+| Accept CONNECT requests and assign a unique `claw_id` | MUST |
+| Issue and verify per-claw auth tokens | MUST |
+| Register each claw's `AcceptanceFilter` | MUST |
+| Accept DISCONNECT requests and remove claw from registry | MUST |
+| Accept HEARTBEAT requests and track liveness | MUST |
+| Replay recent unresolved facts to a claw on reconnect | SHOULD |
+
+### 11.3 Publish Admission Pipeline
+
+The bus MUST run all mandatory checks on every PUBLISH, in this order (cheapest first):
+
+```
+1. Causation depth check      (MUST)   O(1)
+2. Causation cycle detection  (SHOULD) O(depth)
+3. Deduplication window       (SHOULD) O(1) amortized
+4. Per-claw rate limit        (SHOULD) O(1)
+5. Global load breaker        (MAY)    O(1) amortized
+6. Reliability gate           (MAY)    O(1)
+7. Schema validation          (MAY)    O(payload)
+```
+
+A fact that fails any check MUST be rejected with an error; the `content_hash` MUST NOT be accepted.
+
+### 11.4 Dispatch and Arbitration
+
+| Responsibility | Requirement |
+|----------------|:-----------:|
+| Evaluate `AcceptanceFilter` for every connected claw on each PUBLISH | MUST |
+| Deliver `fact_available` to all matched claws (`broadcast` mode) | MUST |
+| For `exclusive` mode: select at most one claw using deterministic arbitration | MUST |
+| Arbitration MUST be deterministic given the same visible inputs | MUST |
+| Push `fact_claimed` to other matched claws when a claim is accepted | MUST |
+| Push `fact_resolved` to matched claws when a fact is resolved | MUST |
+| Push `fact_dead` to matched claws when a fact expires or fails | MUST |
+
+### 11.5 Exclusive Claim Invariant
+
+CLAIM is atomic. The bus MUST guarantee:
+
+- At most one claw holds a claim on any exclusive fact at any time.
+- If two claws attempt CLAIM simultaneously, exactly one succeeds.
+- The rejected claimant receives a failure response.
+- The bus MUST NOT accept a RESOLVE from any claw other than the current claimer.
+
+### 11.6 Lifecycle Enforcement
+
+| Responsibility | Requirement |
+|----------------|:-----------:|
+| Run a TTL expiration loop; mark expired facts as `dead` | MUST |
+| Enforce causation depth limit on every PUBLISH | MUST |
+| NEVER modify a fact's immutable record fields after publish | MUST |
+| Run a GC pass to evict terminal facts beyond retention window | SHOULD |
+
+### 11.7 Trust and Reliability (Extension-Level)
+
+These responsibilities are active when the corresponding extensions are enabled:
+
+| Responsibility | Extension | Requirement |
+|----------------|-----------|:-----------:|
+| Recompute `epistemic_state` after every corroborate/contradict | Epistemic States | MUST (if enabled) |
+| Push `fact_trust_changed` when epistemic state changes | Epistemic States | MUST (if enabled) |
+| Handle `subject_key` auto-supersession on publish | Knowledge Evolution | MUST (if enabled) |
+| Push `fact_superseded` when a fact is superseded | Knowledge Evolution | MUST (if enabled) |
+| Increment/decrement TEC on error/success events | Fault Confinement | MUST (if enabled) |
+| Transition claw to `degraded` / `isolated` at TEC thresholds | Fault Confinement | MUST (if enabled) |
+| Lower published fact confidence when source claw is `degraded` | Fault Confinement | MUST (if enabled) |
+| Validate payload against registered schema on publish | Schema Governance | MUST (if enabled) |
+| Use scoring formula for exclusive arbitration | Advanced Arbitration | MUST (if enabled) |
+| Apply priority aging to unclaimed facts | Storm Protection | SHOULD (if enabled) |
+
+---
+
+## 12. Node Implementation Responsibilities
+
+This section specifies what a conforming **Node** (Claw) implementation MUST, SHOULD, and MAY do. The reference implementation is `claw_fact_bus_plugin` (TypeScript / OpenClaw plugin).
+
+A node is any process — AI agent, human-operated gateway, monitoring tool, or automated script — that connects to the bus and participates in fact coordination.
+
+### 12.1 Connection Lifecycle
+
+| Responsibility | Requirement |
+|----------------|:-----------:|
+| CONNECT to the bus with a name, description, and `AcceptanceFilter` | MUST |
+| Retain `claw_id` and auth token returned by the bus | MUST |
+| Send HEARTBEAT at regular intervals to maintain liveness | MUST |
+| Retry CONNECT with backoff if the bus is not yet reachable | SHOULD |
+| Send DISCONNECT on graceful shutdown | SHOULD |
+| Declare a meaningful `AcceptanceFilter` (capability, domain, or type patterns) rather than using empty monitor mode in production | SHOULD |
+
+### 12.2 Event Subscription and Sensing
+
+| Responsibility | Requirement |
+|----------------|:-----------:|
+| Open a real-time event channel (WebSocket or equivalent) after connecting | MUST |
+| Receive `fact_available`, `fact_claimed`, `fact_resolved`, `fact_dead` events | MUST |
+| Receive `fact_trust_changed`, `fact_superseded` events (if extensions enabled) | SHOULD |
+| Reconnect the event channel automatically with exponential backoff | SHOULD |
+| Restart the event channel when `claw_id` changes (e.g. after bus restart) | MUST |
+| Buffer incoming events in a bounded queue for agent consumption | SHOULD |
+| Warn when the event queue overflows (events are being dropped) | SHOULD |
+| Expose a `sense` operation that drains buffered events and returns action hints | SHOULD |
+
+**Event queue overflow handling**: When the queue is full, the node SHOULD drop the oldest events (FIFO eviction) and report the drop count in the next `sense` response so the agent can compensate via QUERY.
+
+### 12.3 Publishing Facts
+
+| Responsibility | Requirement |
+|----------------|:-----------:|
+| Set `fact_type` in dot-notation (`<domain>.<entity>.<event>`) | MUST |
+| Set `source_claw_id` to own `claw_id` | MUST |
+| Set `mode` to `exclusive` or `broadcast` based on intended semantics | MUST |
+| Set `content_hash` correctly (SHA-256 of canonical payload) | MUST |
+| Set `causation_chain` and `causation_depth` when publishing a child fact | MUST |
+| Set `semantic_kind` to classify the fact (`observation`, `request`, `resolution`, etc.) | SHOULD |
+| Set `confidence` when certainty is less than 1.0 | SHOULD |
+| Set `ttl_seconds` appropriate to the urgency of the fact | SHOULD |
+| NEVER publish command-shaped facts (e.g. `claw-B.do.review`) | MUST NOT |
+
+### 12.4 Claiming and Resolving
+
+| Responsibility | Requirement |
+|----------------|:-----------:|
+| Only attempt CLAIM on `exclusive`-mode facts | MUST |
+| After a successful CLAIM, either RESOLVE or RELEASE the fact | MUST |
+| Derive child facts via RESOLVE `result_facts` so causation chain is extended by the bus | SHOULD |
+| RELEASE if unable to complete the work | MUST |
+| Not retry the same fact after a failed CLAIM | MUST NOT |
+| Not hold a claim indefinitely without making progress | MUST NOT |
+
+### 12.5 Social Validation
+
+| Responsibility | Requirement |
+|----------------|:-----------:|
+| CORROBORATE a fact only when independently verified | SHOULD |
+| CONTRADICT a fact when evidence conflicts with its content | SHOULD |
+| NEVER corroborate or contradict own facts | MUST NOT |
+| Filter incoming facts by `min_epistemic_rank` before acting on them | SHOULD |
+
+### 12.6 Reference Node Implementation: claw_fact_bus_plugin
+
+`claw_fact_bus_plugin` is the reference OpenClaw node implementation. It maps the protocol to agent-callable tools:
+
+| Protocol Operation | Tool |
+|--------------------|------|
+| Drain buffered events | `fact_bus_sense` |
+| PUBLISH | `fact_bus_publish` |
+| QUERY | `fact_bus_query` |
+| CLAIM | `fact_bus_claim` |
+| RELEASE | `fact_bus_release` |
+| RESOLVE | `fact_bus_resolve` |
+| CORROBORATE / CONTRADICT | `fact_bus_validate` |
+| Fetch payload schema | `fact_bus_get_schema` |
+
+**`fact_bus_sense`** is the primary event interface. It drains buffered WebSocket events and returns structured action hints per fact (`claim it`, `observe and react`, `re-evaluate trust`, etc.), guiding the agent's next decision without requiring it to understand raw protocol events.
+
+The plugin handles connection lifecycle (CONNECT, HEARTBEAT, DISCONNECT with server notification), WebSocket management (reconnect with backoff, restart when `claw_id` changes), and event queue management (bounded buffer, overflow warning, `events_dropped` counter in `sense` response).
+
+---
+
 ## Appendix A: Comparison with CAN Bus
 
 | Aspect | CAN Bus | Claw Fact Bus |
@@ -467,9 +706,9 @@ See [IMPLEMENTATION-NOTES.md](IMPLEMENTATION-NOTES.md) for recommended default v
 
 ---
 
-## Appendix C: Agent Behavioral Guide
+## Appendix C: Agent Decision Guide
 
-> **Non-normative.** This appendix describes how an autonomous agent (**Claw**) should interpret and use the protocol in practice. It does not add new MUST-level requirements. For OpenClaw integration, use the **`claw_fact_bus_plugin`** (tools such as `fact_bus_sense`, `fact_bus_publish`, `fact_bus_claim`, `fact_bus_resolve`, `fact_bus_validate`, etc.) which wraps the same REST and WebSocket operations defined in this specification.
+> **Normative supplement to §12.** This appendix translates the node responsibilities in §12 into concrete decision logic an autonomous agent (**Claw**) should follow at runtime. It uses the same MUST/SHOULD language as the rest of the specification. For OpenClaw integration, use the **`claw_fact_bus_plugin`** (tools such as `fact_bus_sense`, `fact_bus_publish`, `fact_bus_claim`, `fact_bus_resolve`, `fact_bus_validate`, etc.) which implements all §12 responsibilities and exposes them as agent-callable tools.
 
 ### C.1 Core Axiom
 

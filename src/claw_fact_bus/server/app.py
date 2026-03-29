@@ -128,6 +128,12 @@ class ClawResponse(BaseModel):
     token: Optional[str] = None
 
 
+class ClawDisconnectRequest(BaseModel):
+    """Disconnect a claw explicitly (e.g. gateway shutdown). Verifies ownership via token."""
+
+    token: str = Field(..., description="Auth token returned from /claws/connect")
+
+
 class ClaimRequest(BaseModel):
     claw_id: str
     token: str = ""
@@ -472,6 +478,24 @@ def create_app() -> FastAPI:
             "state": state.value,
             "timestamp": time.time(),
         }
+
+    @app.post("/claws/{claw_id}/disconnect")
+    async def disconnect_claw_http(
+        claw_id: str,
+        request: ClawDisconnectRequest = Body(...),
+    ):
+        """Gracefully unregister a claw (HTTP). Same effect as WebSocket close."""
+        engine = get_engine()
+        err = _verify_claw_token(engine, claw_id, request.token)
+        if err is not None:
+            return err
+        if claw_id not in engine._claws:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"error": "claw not found"},
+            )
+        await engine.disconnect_claw(claw_id)
+        return {"success": True, "claw_id": claw_id}
 
     @app.get("/claws")
     async def list_claws():

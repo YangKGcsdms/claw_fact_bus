@@ -2,6 +2,8 @@
 
 > Optional, independently versioned extensions to the Core Specification.
 
+中文版本: [EXTENSIONS.zh-CN.md](EXTENSIONS.zh-CN.md)
+
 Each extension is self-contained. Implementations MAY support any subset.
 
 ---
