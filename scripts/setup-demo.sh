@@ -23,8 +23,9 @@ FACT_BUS_REPO_URL="${FACT_BUS_REPO_URL:-https://github.com/YangKGcsdms/claw_fact
 PLUGIN_REPO_URL="${PLUGIN_REPO_URL:-https://github.com/YangKGcsdms/claw_fact_bus_plugin.git}"
 OPENCLAW_REPO_URL="${OPENCLAW_REPO_URL:-https://github.com/openclaw/openclaw.git}"
 
-DEMO_FACT_BUS_REF="${DEMO_FACT_BUS_REF:-main}"
-DEMO_PLUGIN_REF="${DEMO_PLUGIN_REF:-main}"
+# Upstream openclaw uses main; many forks use master for this repo + plugin — override with DEMO_*_REF if needed.
+DEMO_FACT_BUS_REF="${DEMO_FACT_BUS_REF:-master}"
+DEMO_PLUGIN_REF="${DEMO_PLUGIN_REF:-master}"
 DEMO_OPENCLAW_REF="${DEMO_OPENCLAW_REF:-main}"
 
 OPENROUTER_MODEL="${OPENROUTER_MODEL:-openai/gpt-4o-mini}"
@@ -80,8 +81,8 @@ Environment (install):
   OPENROUTER_MODEL     Model id without openrouter/ prefix (default: openai/gpt-4o-mini)
   FACT_BUS_HOST_PORT   Host port for Fact Bus HTTP (default: 28080)
   DEMO_SKIP_BUILD      Set to 1 to skip docker build if images exist
-  DEMO_FACT_BUS_REF    Git ref for claw_fact_bus (default: main)
-  DEMO_PLUGIN_REF      Git ref for claw_fact_bus_plugin (default: main)
+  DEMO_FACT_BUS_REF    Git ref for claw_fact_bus (default: master)
+  DEMO_PLUGIN_REF      Git ref for claw_fact_bus_plugin (default: master)
   DEMO_OPENCLAW_REF    Git ref for openclaw (default: main)
   FACT_BUS_REPO_URL    Override clone URL
   PLUGIN_REPO_URL
@@ -100,6 +101,32 @@ resolve_demo_home() {
   fi
 }
 
+# Try to checkout ref; if missing, fall back to origin/default branch (main vs master mismatch).
+checkout_ref_or_fallback() {
+  local dir="$1" ref="$2" name="$3"
+  local sh
+  sh="$(basename "${BASH_SOURCE[0]:-setup-demo.sh}")"
+  if git -C "$dir" checkout "$ref" 2>/dev/null; then
+    return 0
+  fi
+  if git -C "$dir" checkout "origin/$ref" 2>/dev/null; then
+    return 0
+  fi
+  local def
+  def="$(git -C "$dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')"
+  if [[ -n "$def" ]] && git -C "$dir" checkout "$def" 2>/dev/null; then
+    warn "Branch \"$ref\" not found in $name; using remote default branch \"$def\". Set DEMO_*_REF to pin."
+    return 0
+  fi
+  for fb in main master; do
+    if [[ "$fb" != "$ref" ]] && git -C "$dir" checkout "$fb" 2>/dev/null; then
+      warn "Branch \"$ref\" not found in $name; using \"$fb\" instead. Set DEMO_*_REF to pin."
+      return 0
+    fi
+  done
+  fail "git checkout failed for $name (wanted \"$ref\"). Try DEMO_*_REF=... or: rm -rf \"$dir\" && $sh --reset"
+}
+
 clone_one() {
   local dir="$1" url="$2" ref="$3" name="$4"
   if [[ ! -d "$dir/.git" ]]; then
@@ -110,14 +137,12 @@ clone_one() {
     fi
     step "Shallow clone failed; full clone $name"
     git clone "$url" "$dir" || fail "git clone failed for $name"
-    git -C "$dir" checkout "$ref" || fail "git checkout $ref failed for $name. Try a valid branch/tag or run: $(basename "${BASH_SOURCE[0]:-setup-demo.sh}") --reset"
+    checkout_ref_or_fallback "$dir" "$ref" "$name"
   else
     step "Updating $name (fetch + checkout $ref)"
     git -C "$dir" fetch origin "$ref" 2>/dev/null || git -C "$dir" fetch origin || true
-    if ! git -C "$dir" checkout "$ref" 2>/dev/null; then
-      warn "Could not checkout $ref in $name. If the repo is dirty or shallow, try:"
-      echo "  rm -rf \"$dir\" && re-run install, or:  CLAW_DEMO_HOME=... $(basename "${BASH_SOURCE[0]:-setup-demo.sh}") --reset" >&2
-      fail "git checkout $ref failed in $dir"
+    if ! git -C "$dir" checkout "$ref" 2>/dev/null && ! git -C "$dir" checkout "origin/$ref" 2>/dev/null; then
+      checkout_ref_or_fallback "$dir" "$ref" "$name"
     fi
     git -C "$dir" pull --ff-only 2>/dev/null || warn "git pull --ff-only failed for $name (non-fatal). If stuck, run --reset."
   fi
